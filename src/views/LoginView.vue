@@ -45,12 +45,17 @@ const handleSubmit = () => {
         密码
         <input v-model="form.password" type="password" required placeholder="至少 8 位，含字母数字" />
       </label>
-      <button type="submit" :disabled="loading">{{ loading ? "正在登录…" : "立即登录" }}</button>
+      <button class="load_btn" type="submit" :disabled="loading">{{ loading ? "正在登录…" : "立即登录" }}</button>
       <p v-if="error" class="error">{{ error }}</p>
       <p class="switch-text">
         还没有账号？
         <RouterLink to="/register">立即注册</RouterLink>
       </p>
+      <p class="switch-text">
+        忘记密码？
+        <button class="change-password-btn">修改密码</button>
+      </p>
+
     </form>
   </div>
 </template>
@@ -160,20 +165,32 @@ button {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-button:hover:not(:disabled) {
+.load_btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(93, 130, 255, 0.25);
 }
 
-button:disabled {
+.load_btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.change-password-btn {
+  all: unset;
+  color: #4d6bff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.change-password-btn:hover {
+  text-decoration: underline;
+  text-decoration-color: #477bfa;
 }
 
 .switch-text {
   text-align: center;
   color: #61729d;
   font-size: 0.95rem;
+  margin:0;
 }
 
 .switch-text a {

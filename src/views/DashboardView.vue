@@ -59,7 +59,6 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
             <p>{{ summary.currentMood.label }}</p>
           </div>
           <div class="streak-tag">{{ streakText }}</div>
-          <div class="wave" />
         </div>
       </section>
 
@@ -146,6 +145,7 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
 }
 
 .greeting {
+  font-size: 1.25rem;
   margin: 0 0 0.75rem;
   font-weight: 600;
   color: #4a5d8a;
@@ -182,6 +182,7 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
   display: grid;
   place-items: center;
   min-height: 220px;
+  margin-left: 4rem;
 }
 
 .mood-bubble {
@@ -203,15 +204,14 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
 }
 
 .streak-tag {
-  position: absolute;
-  bottom: 1.5rem;
-  right: 20%;
+  margin-top:1.2rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   background: rgba(93, 130, 255, 0.22);
   color: #31436a;
   font-weight: 600;
   font-size: 0.9rem;
+  text-align: center;/*文字居中*/
 }
 
 .wave {

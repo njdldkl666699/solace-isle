@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const form = reactive({ studentId: "", nickname: "", password: "", confirmPassword: "" });
+const form = reactive({ studentId: "", email: "", nickname: "", password: "", confirmPassword: "" });
 const loading = ref(false);
 const error = ref("");
 
@@ -30,12 +30,25 @@ const handleSubmit = () => {
   <div class="auth-page">
     <form class="auth-card" @submit.prevent="handleSubmit">
       <div class="badge">创建账号</div>
-      <h2>欢迎加入心屿</h2>
+      <h2 style="color:#4f7bea">欢迎加入心屿</h2>
       <p class="subtitle">几步完成注册，开启你的温柔心理伙伴之旅。</p>
 
       <label>
-        学号 / 邮箱
-        <input v-model="form.studentId" type="email" required placeholder="student@example.edu.cn" />
+        学号
+        <input v-model="form.studentId" type="email" required placeholder="1234567" />
+      </label>
+
+      <label>
+        邮箱
+        <input v-model="form.email" type="email" required placeholder="student@example.edu.cn" />
+      </label>
+
+      <label>
+        验证码
+        <span class="verify-row">
+          <input class="verify_code" v-model="form.email" type="email" required placeholder="1234" />
+          <button type="button">获取验证码</button>
+        </span>
       </label>
 
       <label>
@@ -116,12 +129,13 @@ const handleSubmit = () => {
 
 .badge {
   align-self: flex-start;
-  background: rgba(93, 130, 255, 0.16);
-  color: #4f68ff;
+  justify-self: center;
+  background: rgba(201, 210, 241, 0.16);
+  color: #3a3b4c;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.5rem;
 }
 
 .auth-card h2 {
@@ -155,6 +169,17 @@ input:focus {
   outline: none;
   border-color: rgba(93, 130, 255, 0.6);
   box-shadow: 0 0 0 4px rgba(93, 130, 255, 0.18);
+}
+
+.verify-row {
+  display: flex;
+  gap: 3rem;
+  width: 100%;
+}
+
+.verify_code{
+  flex:1;
+  width:60%;
 }
 
 button {
