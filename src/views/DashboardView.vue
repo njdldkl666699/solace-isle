@@ -63,24 +63,6 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
       </section>
 
       <section class="grid">
-        <article class="current-mood">
-          <header>
-            <h3>当前情绪</h3>
-            <span class="emoji">{{ summary.currentMood.emoji }}</span>
-          </header>
-          <p class="label">{{ summary.currentMood.label }}</p>
-          <p class="description">{{ summary.currentMood.description }}</p>
-          <RouterLink class="link" to="/diary">查看最近记录 →</RouterLink>
-        </article>
-
-        <article class="mood-chart">
-          <header>
-            <h3>本周情绪轨迹</h3>
-            <p>了解一周的波动，练习与自己同频。</p>
-          </header>
-          <WeeklyMoodChart :data="summary.weeklyMoodTrend" />
-        </article>
-
         <article class="quick-actions">
           <header>
             <h3>快捷入口</h3>
@@ -95,6 +77,24 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
               </div>
             </RouterLink>
           </div>
+        </article>
+
+        <article class="mood-chart">
+          <header>
+            <h3>本周情绪轨迹</h3>
+            <p>了解一周的波动，练习与自己同频。</p>
+          </header>
+          <WeeklyMoodChart :data="summary.weeklyMoodTrend" />
+        </article>
+
+        <article class="current-mood">
+          <header>
+            <h3>当前情绪</h3>
+            <span class="emoji">{{ summary.currentMood.emoji }}</span>
+          </header>
+          <p class="label">{{ summary.currentMood.label }}</p>
+          <p class="description">{{ summary.currentMood.description }}</p>
+          <RouterLink class="link" to="/diary">查看最近记录 →</RouterLink>
         </article>
 
         <article class="achievements">
@@ -214,20 +214,15 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
   text-align: center;/*文字居中*/
 }
 
-.wave {
-  position: absolute;
-  inset: auto 5% -20% 5%;
-  height: 60%;
-  background: radial-gradient(circle at 50% 0, rgba(93, 130, 255, 0.22), transparent 70%);
-  filter: blur(12px);
-  z-index: -1;
-}
-
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  /* 固定两列，不随视口宽度改变 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.75rem;
 }
+
+/* 保证子元素在网格中可压缩，避免内容撑破导致水平滚动条 */
+.grid > * { min-width: 0; }
 
 .current-mood,
 .mood-chart,
@@ -286,6 +281,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+  overflow-y: auto; /* 若内容过多，允许内部滚动 */
 }
 
 .action-card {
@@ -390,10 +386,6 @@ h3 {
 @media (max-width: 720px) {
   .hero-card {
     padding: 2.2rem;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

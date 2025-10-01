@@ -3,12 +3,10 @@ import { computed, reactive, ref } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
 
-type DiaryTab = "text" | "quick";
 type HistoryView = "list" | "calendar";
 
 const appStore = useAppStore();
 
-const activeTab = ref<DiaryTab>("text");
 const historyView = ref<HistoryView>("list");
 const selectedEmoji = ref<string>("");
 const entrySaved = ref(false);
@@ -32,7 +30,6 @@ const monthInfo = computed(() => {
   const firstDay = new Date(year, month, 1);
   const firstDayWeek = firstDay.getDay() || 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const days = [] as { date: Date; inMonth: boolean; key: string }[];
   for (let i = 1; i < firstDayWeek; i++) {
     const date = new Date(year, month, 1 - (firstDayWeek - i));
@@ -49,12 +46,7 @@ const monthInfo = computed(() => {
       days.push({ date, inMonth: false, key: date.toISOString() });
     }
   }
-  return {
-    year,
-    month,
-    label: `${year}年${month + 1}月`,
-    days,
-  };
+  return { year, month, label: `${year}年${month + 1}月`, days };
 });
 
 const moodForDate = (date: Date) => {
@@ -71,16 +63,12 @@ const handleSave = () => {
     draft.content = "";
     draft.attachmentName = "";
     draft.tags = [];
+    selectedEmoji.value = ""; // clear selected emoji after save
   }, 1200);
 };
 
 const handleEmojiSelect = (emoji: string) => {
-  selectedEmoji.value = emoji;
-  entrySaved.value = true;
-  window.setTimeout(() => {
-    entrySaved.value = false;
-    selectedEmoji.value = "";
-  }, 900);
+  selectedEmoji.value = emoji === selectedEmoji.value ? "" : emoji; // toggle selection
 };
 
 const goPrevMonth = () => {
@@ -108,25 +96,26 @@ const handleFileChange = (event: Event) => {
   <AppShell page-title="心灵日记本" subtitle="在这里，任何情绪都值得被温柔放下。">
     <div class="diary">
       <section class="record-panel">
-        <div class="tab-switch">
-          <button
-            v-for="tab in [
-              { id: 'text', label: '文字记录', emoji: '📝' },
-              { id: 'quick', label: '快速打卡', emoji: '⚡' },
-            ]"
-            :key="tab.id"
-            class="tab-btn"
-            :class="{ active: activeTab === tab.id }"
-            type="button"
-            @click="activeTab = tab.id as DiaryTab"
-          >
-            <span>{{ tab.emoji }}</span>
-            {{ tab.label }}
-          </button>
-        </div>
+        <div class="text-entry">
+          <!-- 合并的快速打卡区域，放在智能情绪标签上方 -->
+          <div class="quick-emoji-block">
+            <p class="title">用一个表情描述现在的你</p>
+            <div class="emoji-row">
+              <button
+                v-for="option in appStore.diary.quickEmojis"
+                :key="option.emoji"
+                type="button"
+                :class="{ active: selectedEmoji === option.emoji }"
+                @click="handleEmojiSelect(option.emoji)"
+              >
+                <span>{{ option.emoji }}</span>
+                <small>{{ option.label }}</small>
+              </button>
+            </div>
+          </div>
 
-        <div v-if="activeTab === 'text'" class="text-entry">
-          <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
+           <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
+
           <div class="tag-suggestions">
             <span>智能情绪标签</span>
             <div class="chips">
@@ -147,47 +136,26 @@ const handleFileChange = (event: Event) => {
             <label>
               上传图片
               <input type="file" accept="image/*" @change="handleFileChange" />
+              <small v-if="draft.attachmentName" class="file-name">{{ draft.attachmentName }}</small>
             </label>
-            <p>
-              {{ draft.attachmentName ? `已选择：${draft.attachmentName}` : "AI 会辅助读取图片情绪元素。" }}
-            </p>
           </div>
 
-          <button class="primary" type="button" @click="handleSave">保存记录</button>
-          <p v-if="entrySaved" class="hint">已保存到你的私人日记。</p>
-        </div>
-
-        <div v-else class="quick-entry">
-          <p class="title">用一个表情描述现在的你</p>
-          <div class="emoji-row">
-            <button
-              v-for="option in appStore.diary.quickEmojis"
-              :key="option.emoji"
-              type="button"
-              :class="{ active: selectedEmoji === option.emoji }"
-              @click="handleEmojiSelect(option.emoji)"
-            >
-              <span>{{ option.emoji }}</span>
-              <small>{{ option.label }}</small>
-            </button>
+          <div class="save-row">
+            <p v-if="entrySaved" class="hint">已保存到你的私人日记。</p>
+            <button class="primary" type="button" @click="handleSave">保存记录</button>
           </div>
-          <p v-if="entrySaved" class="hint">已打卡，感谢你对情绪的诚实。</p>
         </div>
       </section>
 
+      <!-- 历史面板保持不变 -->
       <section class="history-panel">
         <div class="history-header">
           <h3>历史回顾</h3>
           <div class="view-switch">
-            <button type="button" :class="{ active: historyView === 'list' }" @click="historyView = 'list'">
-              列表
-            </button>
-            <button type="button" :class="{ active: historyView === 'calendar' }" @click="historyView = 'calendar'">
-              日历
-            </button>
+            <button type="button" :class="{ active: historyView === 'list' }" @click="historyView = 'list'">列表</button>
+            <button type="button" :class="{ active: historyView === 'calendar' }" @click="historyView = 'calendar'">日历</button>
           </div>
         </div>
-
         <div v-if="historyView === 'list'" class="entry-list">
           <article v-for="entry in entries" :key="entry.id" class="entry-card">
             <header>
@@ -203,7 +171,6 @@ const handleFileChange = (event: Event) => {
             <p>{{ entry.content }}</p>
           </article>
         </div>
-
         <div v-else class="calendar-view">
           <div class="calendar-nav">
             <button type="button" @click="goPrevMonth">←</button>
@@ -211,10 +178,13 @@ const handleFileChange = (event: Event) => {
             <button type="button" @click="goNextMonth">→</button>
           </div>
           <div class="calendar-grid">
-            <span class="weekday" v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day"
-              >周{{ day }}</span
+            <span class="weekday" v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day">周{{ day }}</span>
+            <div
+              v-for="item in monthInfo.days"
+              :key="item.key"
+              class="day"
+              :class="{ 'out-month': !item.inMonth }"
             >
-            <div v-for="item in monthInfo.days" :key="item.key" class="day" :class="{ 'out-month': !item.inMonth }">
               <span class="date">{{ item.date.getDate() }}</span>
               <span class="mood" v-if="moodForDate(item.date)">{{ moodForDate(item.date) }}</span>
             </div>
@@ -244,49 +214,51 @@ const handleFileChange = (event: Event) => {
   gap: 1.5rem;
 }
 
-.tab-switch {
-  display: inline-flex;
-  padding: 0.35rem;
-  background: rgba(93, 130, 255, 0.08);
-  border-radius: 999px;
-  gap: 0.3rem;
+.text-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
 }
 
-.tab-btn {
-  border: none;
-  background: transparent;
-  border-radius: 999px;
-  padding: 0.55rem 1.1rem;
+.quick-emoji-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.quick-emoji-block .title {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 600;
   color: #4a5d8a;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.tab-btn.active {
-  background: #fff;
-  box-shadow: 0 10px 20px rgba(93, 130, 255, 0.18);
-  color: #2d3a63;
+.quick-emoji-block .emoji-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.8rem;
 }
 
-.text-entry textarea {
-  width: 100%;
+.emoji-row button {
+  border: none;
   border-radius: 18px;
-  border: 1px solid rgba(93, 130, 255, 0.18);
-  padding: 1.1rem 1.25rem;
-  font-size: 1rem;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 180px;
+  padding: 0.9rem 0.6rem;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 24px rgba(93, 130, 255, 0.12);
+  display: grid;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.text-entry textarea:focus {
-  outline: none;
-  border-color: rgba(93, 130, 255, 0.5);
-  box-shadow: 0 0 0 4px rgba(93, 130, 255, 0.18);
+.emoji-row button.active,
+.emoji-row button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(93, 130, 255, 0.2);
+}
+
+.emoji-row span {
+  font-size: 1.6rem;
 }
 
 .tag-suggestions {
@@ -297,6 +269,8 @@ const handleFileChange = (event: Event) => {
 }
 
 .chips {
+  margin-top: 0.4rem;
+  margin-bottom: 1rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
@@ -336,12 +310,11 @@ const handleFileChange = (event: Event) => {
 .attachments input {
   padding: 0.6rem 0.9rem;
   border-radius: 14px;
-  border: 1px dashed rgba(93, 130, 255, 0.3);
+  border: 1px dashed rgba(13, 246, 32, 0.3);
   background: rgba(255, 255, 255, 0.85);
 }
 
 .primary {
-  align-self: flex-end;
   background: linear-gradient(135deg, #5d82ff, #8fa3ff);
   border: none;
   border-radius: 14px;
@@ -350,6 +323,7 @@ const handleFileChange = (event: Event) => {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 16px 32px rgba(93, 130, 255, 0.18);
+  margin-top: 1rem;
 }
 
 .hint {
@@ -358,44 +332,24 @@ const handleFileChange = (event: Event) => {
   font-size: 0.9rem;
 }
 
-.quick-entry {
-  display: grid;
-  gap: 1.25rem;
-  text-align: center;
+.save-row {
+  display: flex;
+  flex-direction: column; /* 改为纵向堆叠 */
+  align-items: center;    /* 水平居中 */
+  gap: 0.6rem;            /* 间距缩小以适配纵向布局 */
+  justify-content: center;
 }
 
-.quick-entry .title {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #4a5d8a;
+.save-row .hint {
+  margin: 0;              /* 移除自动推开布局 */
+  margin-right: 0;
 }
 
-.emoji-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 0.8rem;
-}
-
-.emoji-row button {
-  border: none;
-  border-radius: 18px;
-  padding: 0.9rem 0.6rem;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 12px 24px rgba(93, 130, 255, 0.12);
-  display: grid;
-  gap: 0.35rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.emoji-row button.active,
-.emoji-row button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px rgba(93, 130, 255, 0.2);
-}
-
-.emoji-row span {
-  font-size: 1.6rem;
+.file-name { /* 还原文件名样式，避免空规则警告 */
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #5c6b93;
+  font-weight: 400;
 }
 
 .history-header {
