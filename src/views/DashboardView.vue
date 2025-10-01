@@ -1,0 +1,399 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import AppShell from "../components/layout/AppShell.vue";
+import WeeklyMoodChart from "../components/dashboard/WeeklyMoodChart.vue";
+import { useAppStore } from "../stores/appStore";
+
+const appStore = useAppStore();
+
+const quickActions = computed(() => [
+  {
+    label: "记录心情",
+    description: "三十秒写下此刻发生的事",
+    icon: "📝",
+    to: "/diary",
+    accent: "rgba(93, 130, 255, 0.18)",
+  },
+  {
+    label: "与 AI 对话",
+    description: "来聊聊今天发生的事情",
+    icon: "🤖",
+    to: "/chat",
+    accent: "rgba(130, 178, 255, 0.18)",
+  },
+  {
+    label: "CBT 训练舱",
+    description: "换一个角度看看想法",
+    icon: "🎮",
+    to: "/cbt",
+    accent: "rgba(125, 220, 190, 0.22)",
+  },
+  {
+    label: "心灵树洞",
+    description: "看看同伴的温暖瞬间",
+    icon: "🌳",
+    to: "/profile#treehole",
+    accent: "rgba(255, 196, 132, 0.24)",
+  },
+]);
+
+const summary = computed(() => appStore.dashboardSummary);
+const achievements = computed(() => summary.value.recentAchievements);
+
+const streakText = computed(() => `你已连续记录 ${summary.value.streakDays} 天`);
+</script>
+
+<template>
+  <AppShell page-title="我的主页" subtitle="让情绪有被看见的安全感。">
+    <div class="dashboard">
+      <section class="hero-card">
+        <div>
+          <p class="greeting">{{ summary.greeting }}，{{ appStore.user.nickname }} 👋</p>
+          <h2>今天也在勇敢练习拥抱情绪。</h2>
+          <p class="lead">心屿会记录你的每一次靠岸，帮助你在细碎的日子里，看到稳定的力量。</p>
+          <RouterLink class="primary-btn" to="/diary">立即记录心情</RouterLink>
+        </div>
+        <div class="hero-illustration" aria-hidden="true">
+          <div class="mood-bubble">
+            <span>{{ summary.currentMood.emoji }}</span>
+            <p>{{ summary.currentMood.label }}</p>
+          </div>
+          <div class="streak-tag">{{ streakText }}</div>
+          <div class="wave" />
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="current-mood">
+          <header>
+            <h3>当前情绪</h3>
+            <span class="emoji">{{ summary.currentMood.emoji }}</span>
+          </header>
+          <p class="label">{{ summary.currentMood.label }}</p>
+          <p class="description">{{ summary.currentMood.description }}</p>
+          <RouterLink class="link" to="/diary">查看最近记录 →</RouterLink>
+        </article>
+
+        <article class="mood-chart">
+          <header>
+            <h3>本周情绪轨迹</h3>
+            <p>了解一周的波动，练习与自己同频。</p>
+          </header>
+          <WeeklyMoodChart :data="summary.weeklyMoodTrend" />
+        </article>
+
+        <article class="quick-actions">
+          <header>
+            <h3>快捷入口</h3>
+            <p>从这里出发，去探索你的小岛。</p>
+          </header>
+          <div class="actions-grid">
+            <RouterLink v-for="action in quickActions" :key="action.label" :to="action.to" class="action-card">
+              <span class="icon" :style="{ background: action.accent }">{{ action.icon }}</span>
+              <div>
+                <p class="label">{{ action.label }}</p>
+                <p class="desc">{{ action.description }}</p>
+              </div>
+            </RouterLink>
+          </div>
+        </article>
+
+        <article class="achievements">
+          <header>
+            <h3>我的成就</h3>
+            <p>记录你的成长瞬间，为坚持的自己点一盏灯。</p>
+          </header>
+          <ul>
+            <li v-for="item in achievements" :key="item.id">
+              <span class="badge">{{ item.icon }}</span>
+              <div>
+                <p class="title">{{ item.name }}</p>
+                <p class="desc">{{ item.description }}</p>
+                <p class="time">{{ item.achievedAt }}</p>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <article class="reminders" v-if="summary.quickReminders.length">
+          <header>
+            <h3>轻声提醒</h3>
+          </header>
+          <ul>
+            <li v-for="(note, index) in summary.quickReminders" :key="index">{{ note }}</li>
+          </ul>
+        </article>
+      </section>
+    </div>
+  </AppShell>
+</template>
+
+<style scoped>
+.dashboard {
+  display: grid;
+  gap: 2.5rem;
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 2.5rem;
+  background: linear-gradient(135deg, rgba(93, 130, 255, 0.15), rgba(93, 130, 255, 0));
+  border-radius: 28px;
+  padding: 2.8rem;
+  border: 1px solid rgba(74, 110, 255, 0.12);
+  box-shadow: 0 24px 48px rgba(90, 120, 220, 0.08);
+}
+
+.greeting {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+  color: #4a5d8a;
+}
+
+.hero-card h2 {
+  font-size: 2.1rem;
+  margin: 0 0 1rem;
+  color: #1e2a4a;
+}
+
+.lead {
+  margin: 0 0 1.75rem;
+  color: #506087;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.4rem;
+  background: linear-gradient(135deg, #5d82ff, #8fa3ff);
+  border-radius: 14px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 16px 32px rgba(93, 130, 255, 0.22);
+}
+
+.hero-illustration {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+}
+
+.mood-bubble {
+  width: 160px;
+  height: 160px;
+  border-radius: 36px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(165, 187, 255, 0.52));
+  display: grid;
+  place-items: center;
+  gap: 0.4rem;
+  font-size: 2.4rem;
+  color: #2c3a63;
+  box-shadow: 0 24px 28px rgba(97, 124, 210, 0.22);
+}
+
+.mood-bubble p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.streak-tag {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 20%;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(93, 130, 255, 0.22);
+  color: #31436a;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.wave {
+  position: absolute;
+  inset: auto 5% -20% 5%;
+  height: 60%;
+  background: radial-gradient(circle at 50% 0, rgba(93, 130, 255, 0.22), transparent 70%);
+  filter: blur(12px);
+  z-index: -1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.75rem;
+}
+
+.current-mood,
+.mood-chart,
+.quick-actions,
+.achievements,
+.reminders {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: 1.8rem;
+  border: 1px solid rgba(93, 130, 255, 0.12);
+  box-shadow: 0 18px 36px rgba(82, 104, 178, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.current-mood header,
+.mood-chart header,
+.quick-actions header,
+.achievements header,
+.reminders header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #24345b;
+}
+
+.current-mood .emoji {
+  font-size: 1.8rem;
+}
+
+.current-mood .label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.current-mood .description {
+  margin: 0;
+  color: #5b6b93;
+  line-height: 1.5;
+}
+
+.link {
+  text-decoration: none;
+  color: #4f68ff;
+  font-weight: 600;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.action-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  text-decoration: none;
+  color: #24345b;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(93, 130, 255, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 28px rgba(90, 120, 220, 0.15);
+}
+
+.action-card .icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  font-size: 1.5rem;
+}
+
+.action-card .label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.action-card .desc {
+  margin: 0.25rem 0 0;
+  color: #5c6b93;
+  font-size: 0.93rem;
+}
+
+.achievements ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+
+.achievements li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  background: rgba(93, 130, 255, 0.18);
+}
+
+.title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.desc {
+  margin: 0.2rem 0 0;
+  color: #5d6b92;
+  font-size: 0.95rem;
+}
+
+.time {
+  margin: 0.3rem 0 0;
+  color: #8d9abc;
+  font-size: 0.82rem;
+}
+
+.reminders ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #54648d;
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1080px) {
+  .hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-card {
+    padding: 2.2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
