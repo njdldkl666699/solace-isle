@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import {computed, onMounted, onUnmounted, ref} from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAppStore } from "../../stores/appStore";
+import {type Achievement, useAppStore, type WSMessage} from "../../stores/appStore";
 import api from "../../api/request.ts";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElNotification } from "element-plus";
 
 const props = defineProps<{ pageTitle?: string; subtitle?: string; showBack?: boolean }>();
 
@@ -46,8 +46,76 @@ async function getUserInfo() {
   }
 }
 
+const isConnected = ref(false);
+let ws: WebSocket | null = null;
+
+//预加载提醒音效
+const remindAudio = new Audio(new URL("../../assets/sounds/remind.mp3", import.meta.url).href);
+remindAudio.preload = "auto";
+
+//统一通知函数
+function showWSNotify(title: string, message: string) {
+  ElNotification({
+    title,
+    message,
+    position: "bottom-right",
+    duration: 5000,
+    customClass: "ws-notify"
+  });
+  // 播放音效（失败不阻断）
+  remindAudio.currentTime = 0;
+  remindAudio.play().catch(() => {});
+}
+
+const connectWebSocket = () => {
+  const WS_URL = import.meta.env.VITE_WS_URL + `/${appStore.user.studentId}`;
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    isConnected.value = true;
+    console.log('WebSocket connected');
+  };
+
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data) as WSMessage;
+    if(message.type == "remind") {
+      console.log("Received remind message:", message.content);
+      appStore.dashboardSummary.quickReminders.push(message.content as string);
+      showWSNotify("📢轻声提醒", message.content as string);
+    }else if(message.type == "achievement") {
+      appStore.dashboardSummary.recentAchievements.push(message.content as Achievement);
+      showWSNotify((message.content as Achievement).icon
+          + "恭喜您达成新成就："
+          + (message.content as Achievement).name,
+          (message.content as Achievement).description);
+    }else {
+      console.log("Unknown message type:", message);
+    }
+  };
+
+  ws.onclose = () => {
+    isConnected.value = false;
+    console.log('WebSocket disconnected');
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+};
+
+onUnmounted(() => {
+  if (ws) {
+    ws.close();
+  }
+});
+
+async function initialize() {
+  await getUserInfo();
+  await connectWebSocket();
+}
+
 onMounted(() => {
-  getUserInfo();
+  initialize();
 });
 </script>
 

@@ -94,6 +94,11 @@ export type CurrentMood = {
     description: string;
 }
 
+export type WSMessage = {
+    type: "remind" | "achievement",
+    content: string | Achievement,
+}
+
 export const useAppStore = defineStore("app", {
   state: () => ({
     isAuthenticated: false,
@@ -114,16 +119,16 @@ export const useAppStore = defineStore("app", {
       },
       streakDays: 0,
       weeklyMoodTrend: [
-        { day: "周一", score: 3, label: "期待" },
-        { day: "周二", score: 2, label: "紧张" },
-        { day: "周三", score: 4, label: "轻松" },
-        { day: "周四", score: 1, label: "疲惫" },
-        { day: "周五", score: 3, label: "自信" },
-        { day: "周六", score: 4, label: "愉快" },
-        { day: "周日", score: 5, label: "充电" },
-      ] satisfies WeeklyMoodPoint[],
+          {day: "周一", score: 0, label: "" },
+          {day: "周二",score: 0, label: "" },
+          {day: "周三",score: 0, label: "" },
+          {day: "周四",score: 0, label: "" },
+          {day: "周五",score: 0, label: "" },
+          {day: "周六",score: 0, label: "" },
+          {day: "周七",score: 0, label: "" },
+      ] as WeeklyMoodPoint[],
       recentAchievements: [] as Achievement[],
-      quickReminders: ["今晚 21:30 记得完成“演讲前自信”训练的复盘。", "你和 142 位同学一起在坚持情绪记录。"],
+      quickReminders: [] as string[],
     },
     diary: {
       quickEmojis: [
@@ -376,6 +381,9 @@ export const useAppStore = defineStore("app", {
     },
     updateAchievements(achievements: Achievement[]){
       this.dashboardSummary.recentAchievements = achievements;
+    },
+    updateQuickReminders(reminders: string[]){
+      this.dashboardSummary.quickReminders = reminders;
     },
     calcGreeting(){
       const h = new Date().getHours();
