@@ -1,28 +1,56 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import api from "../api/request.ts";
+import { ElMessageBox, ElMessage } from "element-plus";
+import { sha256 } from 'js-sha256';
 
 const router = useRouter();
 
-const form = reactive({ studentId: "", email: "", nickname: "", password: "", confirmPassword: "" });
+const form = reactive({ studentId: "", email: "", code: "", nickname: "", password: "", confirmPassword: "" });
 const loading = ref(false);
-const error = ref("");
 
 const validate = () => {
   if (form.password !== form.confirmPassword) {
-    error.value = "两次输入的密码不一致";
+    ElMessage.warning("两次输入的密码不一致");
+    form.password="";
+    form.confirmPassword="";
     return false;
   }
   return true;
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!validate()) return;
   loading.value = true;
-  window.setTimeout(() => {
+
+  try {
+    const encryptedPassword = sha256(form.password);
+    const response = await api.post("/auth/register", {
+      studentId: form.studentId,
+      email: form.email,
+      nickname: form.nickname,
+      password: encryptedPassword,
+      code: form.code
+    })
+
+    if(response.data.code === 1){
+      loading.value = false;
+      router.push("/login");
+    }else {
+      loading.value = false;
+      await ElMessageBox.alert(response.data.msg || "注册失败，请稍后重试。", '提示', {
+        confirmButtonText: '确定',
+        type: 'error',
+      });
+    }
+  }catch (err: any) {
     loading.value = false;
-    router.push("/login");
-  }, 600);
+    await ElMessageBox.alert(err.response?.data?.msg || "注册失败，请稍后重试。", '提示', {
+      confirmButtonText: '确定',
+      type: 'error'
+    });
+  }
 };
 </script>
 
@@ -35,7 +63,7 @@ const handleSubmit = () => {
 
       <label>
         学号
-        <input v-model="form.studentId" type="email" required placeholder="1234567" />
+        <input v-model="form.studentId" type="text" required placeholder="1234567" />
       </label>
 
       <label>
@@ -46,14 +74,14 @@ const handleSubmit = () => {
       <label>
         验证码
         <span class="verify-row">
-          <input class="verify_code" v-model="form.email" type="email" required placeholder="1234" />
+          <input class="verify_code" v-model="form.code" type="text" required placeholder="1234" />
           <button type="button">获取验证码</button>
         </span>
       </label>
 
       <label>
         昵称
-        <input v-model="form.nickname" required placeholder="给自己取一个小岛昵称" />
+        <input v-model="form.nickname" required placeholder="给自己取一个昵称" />
       </label>
 
       <label>
@@ -67,7 +95,6 @@ const handleSubmit = () => {
       </label>
 
       <button type="submit" :disabled="loading">{{ loading ? "创建中…" : "完成注册" }}</button>
-      <p v-if="error" class="error">{{ error }}</p>
 
       <p class="switch-text">
         已有账号？

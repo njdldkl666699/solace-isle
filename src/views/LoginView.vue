@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessageBox } from "element-plus";
+import { sha256 } from 'js-sha256';
 
 const router = useRouter();
 const appStore = useAppStore();
@@ -12,9 +13,14 @@ const form = reactive({ account: "", password: "" });
 const loading = ref(false);
 
 const handleSubmit = async () => {
+  loading.value = true;
   try{
-    loading.value = true;
-    const response = await api.post("/auth/login", form);
+    const encryptedPassword = sha256(form.password);
+    const response = await api.post("/auth/login", {
+      account: form.account,
+      password: encryptedPassword
+    });
+
     if(response.data.code === 1){
       loading.value = false;
       appStore.authenticate(response.data.data);
@@ -26,14 +32,14 @@ const handleSubmit = async () => {
       await ElMessageBox.alert(response.data.msg || "登录失败，请稍后重试。", '提示', {
         confirmButtonText: '确定',
         type: 'error',
-      })
+      });
     }
   } catch (err: any) {
     loading.value = false;
     await ElMessageBox.alert(err.response?.data?.msg || "登录失败，请稍后重试。", '提示', {
       confirmButtonText: '确定',
       type: 'error'
-    })
+    });
   }
 };
 </script>
