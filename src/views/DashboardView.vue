@@ -58,9 +58,44 @@ const getCurrentMood = async () => {
   }
 }
 
+const getWeeklyMoodTrend = async () => {
+  try{
+    const response = await api.get("/dashboard/weeklyTrack",{
+      params: {
+        days: 7
+      }
+    });
+
+    if(response.data.code === 1){
+      appStore.updateWeeklyMoodTrend(response.data.data.moodTrend);
+      appStore.updateStreakDays(response.data.data.consecutiveDays);
+    }else {
+      ElMessage.error("无法获取情绪轨迹");
+    }
+  }catch {
+    ElMessage.error("无法获取情绪轨迹");
+  }
+}
+
+const getAchievements = async () => {
+  try {
+    const response = await api.get("/dashboard/achievements");
+
+    if (response.data.code === 1) {
+      appStore.updateAchievements(response.data.data);
+    } else {
+      ElMessage.error("无法获取成就信息");
+    }
+  } catch {
+    ElMessage.error("无法获取成就信息");
+  }
+};
+
 onMounted(() => {
   appStore.updateGreeting();
   getCurrentMood();
+  getWeeklyMoodTrend();
+  getAchievements();
 });
 </script>
 
@@ -102,8 +137,8 @@ onMounted(() => {
 
         <article class="mood-chart">
           <header>
-            <h3>本周情绪轨迹</h3>
-            <p>了解一周的波动，练习与自己同频。</p>
+            <h3>近一周情绪轨迹</h3>
+            <p>了解一周内的情绪波动，练习与自己同频。</p>
           </header>
           <WeeklyMoodChart :data="summary.weeklyMoodTrend" />
         </article>
@@ -124,7 +159,7 @@ onMounted(() => {
             <p>记录你的成长瞬间，为坚持的自己点一盏灯。</p>
           </header>
           <ul>
-            <li v-for="item in achievements" :key="item.id">
+            <li v-for="item in achievements" :key="item.name">
               <span class="badge">{{ item.icon }}</span>
               <div>
                 <p class="title">{{ item.name }}</p>

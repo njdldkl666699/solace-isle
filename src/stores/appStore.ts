@@ -8,7 +8,6 @@ export type WeeklyMoodPoint = {
 };
 
 export type Achievement = {
-  id: string;
   name: string;
   description: string;
   icon: string;
@@ -113,32 +112,17 @@ export const useAppStore = defineStore("app", {
         label: "平静",
         description: "你保持着温柔而稳定的节奏，继续为自己创造松弛感吧。",
       },
-      streakDays: 7,
+      streakDays: 0,
       weeklyMoodTrend: [
-        { day: "周一", score: 3, label: "期待", note: "完成论文大纲" },
-        { day: "周二", score: 2, label: "紧张", note: "临近汇报" },
-        { day: "周三", score: 4, label: "轻松", note: "和朋友散步" },
-        { day: "周四", score: 1, label: "疲惫", note: "熬夜赶DDL" },
-        { day: "周五", score: 3, label: "自信", note: "演示顺利通过" },
-        { day: "周六", score: 4, label: "愉快", note: "社团活动" },
-        { day: "周日", score: 5, label: "充电", note: "午后冥想" },
+        { day: "周一", score: 3, label: "期待" },
+        { day: "周二", score: 2, label: "紧张" },
+        { day: "周三", score: 4, label: "轻松" },
+        { day: "周四", score: 1, label: "疲惫" },
+        { day: "周五", score: 3, label: "自信" },
+        { day: "周六", score: 4, label: "愉快" },
+        { day: "周日", score: 5, label: "充电" },
       ] satisfies WeeklyMoodPoint[],
-      recentAchievements: [
-        {
-          id: "streak-7",
-          name: "连续记录 7 天",
-          description: "坚持记录，让情绪有了温柔的被看见。",
-          icon: "🔥",
-          achievedAt: "2025-09-28",
-        },
-        {
-          id: "cbt-first",
-          name: "完成首个CBT训练",
-          description: "尝试用新的角度解释那份担忧。",
-          icon: "🧠",
-          achievedAt: "2025-09-26",
-        },
-      ] satisfies Achievement[],
+      recentAchievements: [] as Achievement[],
       quickReminders: ["今晚 21:30 记得完成“演讲前自信”训练的复盘。", "你和 142 位同学一起在坚持情绪记录。"],
     },
     diary: {
@@ -383,6 +367,15 @@ export const useAppStore = defineStore("app", {
       this.dashboardSummary.currentMood.emoji = Mood.emoji || "🌤️";
       this.dashboardSummary.currentMood.label = Mood.label || "平静";
       this.dashboardSummary.currentMood.description = Mood.description || "你保持着温柔而稳定的节奏，继续为自己创造松弛感吧。";
+    },
+    updateStreakDays(days: number){
+      this.dashboardSummary.streakDays = days;
+    },
+    updateWeeklyMoodTrend(points: WeeklyMoodPoint[]){
+      this.dashboardSummary.weeklyMoodTrend = points;
+    },
+    updateAchievements(achievements: Achievement[]){
+      this.dashboardSummary.recentAchievements = achievements;
     },
     calcGreeting(){
       const h = new Date().getHours();
