@@ -32,7 +32,7 @@ const quickActions = computed(() => [
     label: "心灵树洞",
     description: "看看同伴的温暖瞬间",
     icon: "🌳",
-    to: "/profile#treehole",
+    to: "/treehole",
     accent: "rgba(255, 196, 132, 0.24)",
   },
 ]);

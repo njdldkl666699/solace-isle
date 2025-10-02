@@ -43,6 +43,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import("../views/ProfileView.vue"),
   },
   {
+    path: "/treehole",
+    component: () => import("../views/TreeHoleView.vue"),
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import("../views/NotFoundView.vue"),
   },

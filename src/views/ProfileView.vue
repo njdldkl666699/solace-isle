@@ -72,21 +72,6 @@ const settings = reactive({
           </article>
         </div>
       </section>
-
-      <section id="treehole" class="treehole">
-        <h4>心灵树洞精选</h4>
-        <p class="hint">所有内容均匿名展示，让每份心事都被温柔承接。</p>
-        <ul>
-          <li v-for="post in appStore.treehole.posts" :key="post.id">
-            <div class="emoji">{{ post.moodEmoji }}</div>
-            <p>{{ post.content }}</p>
-            <footer>
-              <time>{{ new Date(post.createdAt).toLocaleString("zh-CN", { hour12: false }) }}</time>
-              <span>暖心值 {{ post.warms }}</span>
-            </footer>
-          </li>
-        </ul>
-      </section>
     </div>
   </AppShell>
 </template>
@@ -144,8 +129,7 @@ const settings = reactive({
 }
 
 .settings,
-.achievements,
-.treehole {
+.achievements {
   background: rgba(255, 255, 255, 0.88);
   border-radius: 24px;
   padding: 2rem 2.2rem;
@@ -252,42 +236,6 @@ h4 {
 
 .icon {
   font-size: 1.8rem;
-}
-
-.treehole .hint {
-  margin: 0;
-  color: #5c6b93;
-}
-
-.treehole ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 1rem;
-}
-
-.treehole li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
-  background: rgba(246, 249, 255, 0.9);
-  border-radius: 18px;
-  padding: 1.1rem 1.4rem;
-  border: 1px solid rgba(93, 130, 255, 0.1);
-  align-items: start;
-}
-
-.treehole .emoji {
-  font-size: 1.4rem;
-}
-
-.treehole footer {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  color: #5c6b93;
-  font-size: 0.85rem;
 }
 
 @media (max-width: 960px) {
