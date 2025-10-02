@@ -127,7 +127,7 @@ const handleSubmit = async () => {
       <label>
         验证码
         <span class="verify-row">
-          <input class="verify_code" v-model="form.code" type="text" required placeholder="1234" />
+          <input class="verify_code" v-model="form.code" type="text" required placeholder="验证码" />
           <button type="button" :disabled="countdown > 0" @click="sendEmail">
             {{ countdown > 0 ? countdown + 's后重新发送' : '获取验证码' }}
           </button>

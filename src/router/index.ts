@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: "auth" },
   },
   {
+    path: "/resetPassword",
+    component: () => import("../views/ResetPasswordView.vue"),
+    meta: { layout: "auth" },
+  },
+  {
     path: "/dashboard",
     component: () => import("../views/DashboardView.vue"),
   },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import {reactive, ref} from "vue";
 import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
@@ -75,7 +75,7 @@ const handleSubmit = async () => {
       </p>
       <p class="switch-text">
         忘记密码？
-        <button class="change-password-btn" type="button">修改密码</button>
+        <RouterLink to="/resetPassword">找回密码</RouterLink>
       </p>
     </form>
   </div>
