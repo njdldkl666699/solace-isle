@@ -14,6 +14,7 @@ const navLinks = computed(() => [
   { label: "心灵日记本", path: "/diary" },
   { label: "AI伙伴", path: "/chat" },
   { label: "CBT训练舱", path: "/cbt" },
+  { label: "心灵树洞", path: "/treehole" },
   { label: "个人中心", path: "/profile" },
 ]);
 
