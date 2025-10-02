@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import api from "../api/request.ts";
 import { ElMessageBox, ElMessage } from "element-plus";
@@ -9,6 +9,59 @@ const router = useRouter();
 
 const form = reactive({ studentId: "", email: "", code: "", nickname: "", password: "", confirmPassword: "" });
 const loading = ref(false);
+const countdown = ref(0);
+let countdownTimer: number | null = null;
+
+const startCountdown = (sec = 60) => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  countdown.value = sec;
+  countdownTimer = window.setInterval(() => {
+    countdown.value -= 1;
+    if (countdown.value <= 0) {
+      countdown.value = 0;
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }
+  }, 1000);
+};
+
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer);
+});
+
+const checkEmail = () => {
+  if(form.email === "" || !form.email.includes("@")){
+    ElMessage.warning("请输入正确的邮箱地址");
+    return false;
+  }
+  return true;
+};
+
+const sendEmail = async () => {
+  if (countdown.value > 0) return;
+  if (!checkEmail()) return;
+  try {
+    const response = await api.get("/auth/sendCode",{
+       params: {
+        email: form.email
+      }
+    });
+
+    if(response.data.code === 1){
+      ElMessage.success("验证码已发送");
+      startCountdown(60);
+    }else {
+      ElMessage.error(response.data.msg || "验证码发送失败，请稍后重试。");
+    }
+  }catch (err: any){
+    ElMessage.error(err.response?.data?.msg || "验证码发送失败，请稍后重试。");
+  }
+}
 
 const validate = () => {
   if (form.password !== form.confirmPassword) {
@@ -75,7 +128,9 @@ const handleSubmit = async () => {
         验证码
         <span class="verify-row">
           <input class="verify_code" v-model="form.code" type="text" required placeholder="1234" />
-          <button type="button">获取验证码</button>
+          <button type="button" :disabled="countdown > 0" @click="sendEmail">
+            {{ countdown > 0 ? countdown + 's后重新发送' : '获取验证码' }}
+          </button>
         </span>
       </label>
 

@@ -75,7 +75,7 @@ const handleSubmit = async () => {
       </p>
       <p class="switch-text">
         忘记密码？
-        <button class="change-password-btn">修改密码</button>
+        <button class="change-password-btn" type="button">修改密码</button>
       </p>
     </form>
   </div>
