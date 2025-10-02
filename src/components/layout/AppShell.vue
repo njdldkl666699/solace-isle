@@ -25,6 +25,10 @@ const handleBack = () => {
     router.back();
   }
 };
+
+const toProfile = () => {
+  router.push("/profile")
+}
 </script>
 
 <template>
@@ -48,7 +52,7 @@ const handleBack = () => {
           {{ link.label }}
         </RouterLink>
       </nav>
-      <div class="app-shell__user">
+      <div class="app-shell__user" @click="toProfile">
         <div class="user-card">
           <img :src="appStore.user.avatarUrl" alt="用户头像" class="avatar" />
           <div>
@@ -246,6 +250,10 @@ const handleBack = () => {
     display: flex;
     justify-content: center;
   }
+
+   .app-shell__user:hover {
+     cursor: pointer;
+   }
 
   .app-shell__nav {
     flex-wrap: wrap;

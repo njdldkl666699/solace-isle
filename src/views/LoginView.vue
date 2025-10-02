@@ -216,17 +216,6 @@ button {
   cursor: not-allowed;
 }
 
-.change-password-btn {
-  all: unset;
-  color: #4d6bff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.change-password-btn:hover {
-  text-decoration: underline;
-  text-decoration-color: #477bfa;
-}
-
 .switch-text {
   text-align: center;
   color: #61729d;
