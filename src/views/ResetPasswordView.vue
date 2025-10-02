@@ -117,7 +117,7 @@ const handleSubmit = async () => {
       <p>别担心。按照下面 3 步即可安全重设你的登录密码，继续你的情绪照护之旅。</p>
       <ul>
         <li><strong>1.</strong> 输入注册邮箱并获取验证码。</li>
-        <li><strong>2.</strong> 输入邮件中的 4 位/6 位验证码。</li>
+        <li><strong>2.</strong> 输入邮件中的 6 位验证码。</li>
         <li><strong>3.</strong> 设置一个全新的、更安全的密码。</li>
       </ul>
       <p class="note">建议密码包含大小写字母、数字与符号的组合，避免与其它站点相同。</p>

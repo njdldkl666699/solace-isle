@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {reactive, ref} from "vue";
+import { reactive, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
@@ -11,6 +11,26 @@ const appStore = useAppStore();
 
 const form = reactive({ account: "", password: "" });
 const loading = ref(false);
+
+// 动态问候
+const greeting = ref('');
+
+const calcGreeting = () => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 11) return '早安';
+  if (h >= 11 && h < 14) return '午安';
+  if (h >= 14 && h < 18) return '下午好';
+  if (h >= 18 && h < 22) return '晚上好';
+  return '晚安';
+};
+
+const updateGreeting = () => {
+  greeting.value = calcGreeting();
+};
+
+onMounted(() => {
+  updateGreeting();
+});
 
 const handleSubmit = async () => {
   loading.value = true;
@@ -48,7 +68,7 @@ const handleSubmit = async () => {
   <div class="auth-page">
     <div class="welcome-panel">
       <div class="badge">心屿 · AI心理伙伴</div>
-      <h1>晚安，欢迎靠岸。</h1>
+      <h1>{{ greeting }}，欢迎靠岸。</h1>
       <p>我们始终为你留下一盏柔和的灯光，在这里练习表达与自我照顾。</p>
       <ul>
         <li>智能情绪日记，帮你看见细腻波动。</li>
