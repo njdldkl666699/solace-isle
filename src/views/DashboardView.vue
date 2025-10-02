@@ -60,7 +60,7 @@ const getCurrentMood = async () => {
 
 const getWeeklyMoodTrend = async () => {
   try{
-    const response = await api.get("/dashboard/weeklyTrack",{
+    const response = await api.get("/dashboard/recentTrack",{
       params: {
         days: 7
       }
@@ -91,11 +91,26 @@ const getAchievements = async () => {
   }
 };
 
+const getQuickReminders = async () => {
+  try {
+    const response = await api.get("/dashboard/remind");
+
+    if (response.data.code === 1) {
+      appStore.updateQuickReminders(response.data.data);
+    } else {
+      ElMessage.error("无法获取轻声提醒");
+    }
+  } catch {
+    ElMessage.error("无法获取轻声提醒");
+  }
+};
+
 onMounted(() => {
   appStore.updateGreeting();
   getCurrentMood();
   getWeeklyMoodTrend();
   getAchievements();
+  getQuickReminders();
 });
 </script>
 
