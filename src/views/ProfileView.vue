@@ -16,7 +16,7 @@ const settings = reactive({
   <AppShell page-title="个人中心" subtitle="调节习惯、收藏回忆，和自己保持同频。">
     <div class="profile">
       <section class="hero-card">
-        <img :src="appStore.user.avatarUrl" alt="用户头像" />
+        <img :src="appStore.user.avatar" alt="用户头像" />
         <div>
           <h3>{{ appStore.user.nickname }}</h3>
           <p class="id">学号（脱敏）：{{ appStore.user.studentId.slice(0, 4) }}****</p>

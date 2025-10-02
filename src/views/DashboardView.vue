@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import WeeklyMoodChart from "../components/dashboard/WeeklyMoodChart.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
 
@@ -41,6 +43,25 @@ const summary = computed(() => appStore.dashboardSummary);
 const achievements = computed(() => summary.value.recentAchievements);
 
 const streakText = computed(() => `你已连续记录 ${summary.value.streakDays} 天`);
+
+const getCurrentMood = async () => {
+  try{
+    const response = await api.get("/dashboard/currentMood");
+
+    if(response.data.code === 1){
+      appStore.updateCurrentMood(response.data.data);
+    }else {
+      ElMessage.error("无法获取当前情绪");
+    }
+  }catch {
+    ElMessage.error("无法获取当前情绪");
+  }
+}
+
+onMounted(() => {
+  appStore.updateGreeting();
+  getCurrentMood();
+});
 </script>
 
 <template>
@@ -48,7 +69,7 @@ const streakText = computed(() => `你已连续记录 ${summary.value.streakDays
     <div class="dashboard">
       <section class="hero-card">
         <div>
-          <p class="greeting">{{ summary.greeting }}，{{ appStore.user.nickname }} 👋</p>
+          <p class="greeting">{{ appStore.greeting }}，{{ appStore.user.nickname }} 👋</p>
           <h2>今天也在勇敢练习拥抱情绪。</h2>
           <p class="lead">心屿会记录你的每一次靠岸，帮助你在细碎的日子里，看到稳定的力量。</p>
           <RouterLink class="primary-btn" to="/diary">立即记录心情</RouterLink>

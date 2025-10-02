@@ -81,19 +81,33 @@ export type TreeholePost = {
   warms: number;
 };
 
+export type User = {
+    nickname: string;
+    studentId: string;
+    email: string;
+    avatar: string;
+    motto: string;
+}
+
+export type CurrentMood = {
+    emoji: string;
+    label: string;
+    description: string;
+}
+
 export const useAppStore = defineStore("app", {
   state: () => ({
     isAuthenticated: false,
     token: "",
+    greeting: "你好",
     user: {
-      nickname: "林舟",
-      studentId: "2023123456",
-      email: "linzhou@example.edu.cn",
-      avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=linzhou",
+      nickname: "名字不见了😭",
+      studentId: "学号不见了😭",
+      email: "邮箱不见了😭",
+      avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=linzhou",
       motto: "小岛虽小，总能靠岸。",
     },
     dashboardSummary: {
-      greeting: "下午好",
       currentMood: {
         emoji: "🌤️",
         label: "平静",
@@ -357,6 +371,29 @@ export const useAppStore = defineStore("app", {
     logout() {
       this.isAuthenticated = false;
       this.token = "";
+    },
+    updateUser(user: User){
+      this.user.nickname = user.nickname || "名字不见了😭";
+      this.user.studentId = user.studentId || "学号不见了😭";
+      this.user.email = user.email || "邮箱不见了😭";
+      this.user.avatar = user.avatar || "https://api.dicebear.com/7.x/pixel-art/svg?seed=linzhou";
+      this.user.motto = user.motto || "小岛虽小，总能靠岸。";
+    },
+    updateCurrentMood(Mood: CurrentMood){
+      this.dashboardSummary.currentMood.emoji = Mood.emoji || "🌤️";
+      this.dashboardSummary.currentMood.label = Mood.label || "平静";
+      this.dashboardSummary.currentMood.description = Mood.description || "你保持着温柔而稳定的节奏，继续为自己创造松弛感吧。";
+    },
+    calcGreeting(){
+      const h = new Date().getHours();
+      if (h >= 5 && h < 11) return '早安';
+      if (h >= 11 && h < 14) return '午安';
+      if (h >= 14 && h < 18) return '下午好';
+      if (h >= 18 && h < 22) return '晚上好';
+      return '晚安';
+    },
+    updateGreeting(){
+      this.greeting = this.calcGreeting();
     },
     addUserMessage(sessionId: string, content: string) {
       const session = this.chat.sessions.find((item) => item.id === sessionId);

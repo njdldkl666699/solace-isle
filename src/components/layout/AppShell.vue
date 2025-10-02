@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "../../stores/appStore";
+import api from "../../api/request.ts";
+import { ElMessage } from "element-plus";
 
 const props = defineProps<{ pageTitle?: string; subtitle?: string; showBack?: boolean }>();
 
@@ -29,6 +31,24 @@ const handleBack = () => {
 const toProfile = () => {
   router.push("/profile")
 }
+
+async function getUserInfo() {
+  try {
+    const response = await api.get("/user/profile");
+
+    if(response.data.code === 1){
+      appStore.updateUser(response.data.data);
+    }else {
+      ElMessage.error("无法获取用户信息");
+    }
+  }catch (err: any){
+    ElMessage.error("无法获取用户信息");
+  }
+}
+
+onMounted(() => {
+  getUserInfo();
+});
 </script>
 
 <template>
@@ -54,7 +74,7 @@ const toProfile = () => {
       </nav>
       <div class="app-shell__user" @click="toProfile">
         <div class="user-card">
-          <img :src="appStore.user.avatarUrl" alt="用户头像" class="avatar" />
+          <img :src="appStore.user.avatar" alt="用户头像" class="avatar" />
           <div>
             <p class="nickname">{{ appStore.user.nickname }}</p>
             <p class="motto">{{ appStore.user.motto }}</p>
