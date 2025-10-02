@@ -165,6 +165,7 @@ const toProfile = () => {
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(87, 115, 170, 0.18);
   backdrop-filter: blur(8px);
+  cursor: pointer;
 }
 
 .avatar {
