@@ -2,22 +2,39 @@
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import { ElMessageBox } from "element-plus";
 
 const router = useRouter();
 const appStore = useAppStore();
 
-const form = reactive({ email: "", password: "" });
+const form = reactive({ account: "", password: "" });
 const loading = ref(false);
-const error = ref("");
 
-const handleSubmit = () => {
-  loading.value = true;
-  error.value = "";
-  window.setTimeout(() => {
+const handleSubmit = async () => {
+  try{
+    loading.value = true;
+    const response = await api.post("/auth/login", form);
+    if(response.data.code === 1){
+      loading.value = false;
+      appStore.authenticate(response.data.data);
+      await router.push("/dashboard");
+    }
+    else{
+      loading.value = false;
+      console.log(response.data.msg || "登录失败，请稍后重试。")
+      await ElMessageBox.alert(response.data.msg || "登录失败，请稍后重试。", '提示', {
+        confirmButtonText: '确定',
+        type: 'error',
+      })
+    }
+  } catch (err: any) {
     loading.value = false;
-    appStore.authenticate();
-    router.push("/dashboard");
-  }, 500);
+    await ElMessageBox.alert(err.response?.data?.msg || "登录失败，请稍后重试。", '提示', {
+      confirmButtonText: '确定',
+      type: 'error'
+    })
+  }
 };
 </script>
 
@@ -39,14 +56,13 @@ const handleSubmit = () => {
       <p class="subtitle">使用学号邮箱即可进入你的专属心理空间。</p>
       <label>
         学号 / 邮箱
-        <input v-model="form.email" type="email" required placeholder="student@example.edu.cn" />
+        <input v-model="form.account" required placeholder="student@example.edu.cn" />
       </label>
       <label>
         密码
         <input v-model="form.password" type="password" required placeholder="至少 8 位，含字母数字" />
       </label>
       <button class="load_btn" type="submit" :disabled="loading">{{ loading ? "正在登录…" : "立即登录" }}</button>
-      <p v-if="error" class="error">{{ error }}</p>
       <p class="switch-text">
         还没有账号？
         <RouterLink to="/register">立即注册</RouterLink>
@@ -55,7 +71,6 @@ const handleSubmit = () => {
         忘记密码？
         <button class="change-password-btn">修改密码</button>
       </p>
-
     </form>
   </div>
 </template>

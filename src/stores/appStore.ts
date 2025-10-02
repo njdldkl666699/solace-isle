@@ -84,6 +84,7 @@ export type TreeholePost = {
 export const useAppStore = defineStore("app", {
   state: () => ({
     isAuthenticated: false,
+    token: "",
     user: {
       nickname: "林舟",
       studentId: "2023123456",
@@ -349,11 +350,13 @@ export const useAppStore = defineStore("app", {
     },
   },
   actions: {
-    authenticate() {
+    authenticate(token: string) {
       this.isAuthenticated = true;
+      this.token = token;
     },
     logout() {
       this.isAuthenticated = false;
+      this.token = "";
     },
     addUserMessage(sessionId: string, content: string) {
       const session = this.chat.sessions.find((item) => item.id === sessionId);

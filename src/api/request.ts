@@ -1,5 +1,8 @@
 import axios from "axios"
+import { useAppStore } from "../stores/appStore";
 // import {ElMessageBox} from "element-plus";
+
+const appStore = useAppStore();
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_API_BASE_URL
@@ -9,7 +12,7 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
-            config.headers.Authentication = token
+            config.headers.Authentication = 'Bearer ' + appStore.token;
         }
         return config
     },
