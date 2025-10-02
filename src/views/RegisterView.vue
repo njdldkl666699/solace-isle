@@ -195,7 +195,8 @@ const handleSubmit = async () => {
   align-items: center;
   gap: 3rem;
   padding: 8vh 6vw;
-  background: linear-gradient(120deg, #f4f7ff 0%, #fbf1ff 100%);
+  background: radial-gradient(circle at top left, rgba(129, 172, 255, 0.35), transparent 65%),
+    linear-gradient(145deg, #f4f8ff 0%, #fef7ff 100%);
 }
 
 .auth-card {
