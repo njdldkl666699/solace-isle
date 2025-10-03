@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from "vue";
+import { computed, reactive, ref, onMounted, watch } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
-import {ElMessage} from "element-plus";
+import { ElMessage } from "element-plus";
 
 type HistoryView = "list" | "calendar";
 
@@ -14,6 +14,8 @@ const selectedEmoji = ref<string>("");
 const entrySaved = ref(false);
 
 const draft = reactive({
+  moodEmoji: "",
+  moodLabel: "",
   content: "",
   attachmentName: "",
   tags: [] as string[],
@@ -70,7 +72,16 @@ const handleSave = () => {
 };
 
 const handleEmojiSelect = (emoji: string) => {
-  selectedEmoji.value = emoji === selectedEmoji.value ? "" : emoji; // toggle selection
+  if (selectedEmoji.value === emoji) {
+    selectedEmoji.value = "";
+    draft.moodEmoji = "";
+    draft.moodLabel = "";
+  } else {
+    selectedEmoji.value = emoji;
+    const found = appStore.diary.quickEmojis.find(e => e.emoji === emoji);
+    draft.moodEmoji = emoji;
+    draft.moodLabel = found?.label || "";
+  }
 };
 
 const goPrevMonth = () => {
@@ -112,6 +123,87 @@ const getEntries = async () => {
 onMounted(() => {
   getEntries();
 });
+
+// 管理快速表情相关状态
+const manageDialogVisible = ref(false);
+const newEmoji = ref("");
+const newLabel = ref("");
+const emojiPaletteVisible = ref(false);
+const QUICK_EMOJI_LIMIT = 20; // 适度限制，避免过多撑坏布局
+
+// 简单表情面板数据（常用分类的一小部分）
+const emojiPalette = [
+  "😀","😃","😄","😁","😆","🥹","😂","🤣","😊","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥱","😤","😠","😡","😶","😐","😑","😯","😦","😧","😢","😭","😮","😲","🤯","😳","🥺","😨","😰","😥","😱","😓","🤗","🤔","🤤","😴","😪","🤢","🤮","🤧","😷","🤒","🤕","🫡","🤠","😇","🤫","🤭","🫢","🫣","🤥","😈","👿","💀","☠️","👻","👽","👾","🤖","🎃"
+];
+
+const openManageDialog = () => {
+  manageDialogVisible.value = true;
+  newEmoji.value = "";
+  newLabel.value = "";
+  emojiPaletteVisible.value = false;
+};
+
+const selectPaletteEmoji = (emo: string) => {
+  newEmoji.value = emo;
+  emojiPaletteVisible.value = false;
+};
+
+const addQuickEmoji = () => {
+  if (appStore.diary.quickEmojis.length >= QUICK_EMOJI_LIMIT) {
+    ElMessage.warning(`最多添加 ${QUICK_EMOJI_LIMIT} 个表情`);
+    return;
+  }
+  const emoji = newEmoji.value.trim();
+  const label = newLabel.value.trim();
+  if (!emoji || !label) {
+    ElMessage.warning("请先选择表情并填写标签");
+    return;
+  }
+  if (emoji.length > 4) {
+    ElMessage.warning("请使用单个表情");
+    return;
+  }
+  const ok = appStore.addQuickEmoji(emoji, label);
+  if (!ok) {
+    ElMessage.error("添加失败：表情已存在");
+    return;
+  }
+  ElMessage.success("已添加");
+  newEmoji.value = "";
+  newLabel.value = "";
+};
+
+const removeQuickEmoji = (emoji: string) => {
+  const ok = appStore.removeQuickEmoji(emoji);
+  if (ok) {
+    if (selectedEmoji.value === emoji) {
+      selectedEmoji.value = "";
+      draft.moodEmoji = "";
+      draft.moodLabel = "";
+    }
+    ElMessage.success("已删除");
+  }
+};
+
+// 允许用户粘贴/输入，但只保留第一个“表情”/字符（使用 Array.from 处理代理对）
+const sanitizeEmojiInput = () => {
+  // 允许用户粘贴/输入，但只保留第一个“表情”/字符（使用 Array.from 处理代理对）
+  let val = newEmoji.value.trim();
+  if (!val) return;
+  const chars = Array.from(val);
+  if (chars.length > 1) {
+    // 如果第一个是组合表情（例如国旗、肤色），尽量保留最初粘贴的前两个以内（简单策略）
+    newEmoji.value = chars[0] as string;
+  } else {
+    newEmoji.value = val;
+  }
+  // 过滤掉常规字母数字（如果需要严格限制，可加更详细的正则，这里只是简单判断长度）
+  if (newEmoji.value.length > 4) {
+    newEmoji.value = Array.from(newEmoji.value)[0] as string;
+  }
+};
+
+watch(newEmoji, () => sanitizeEmojiInput());
 </script>
 
 <template>
@@ -119,9 +211,11 @@ onMounted(() => {
     <div class="diary">
       <section class="record-panel">
         <div class="text-entry">
-          <!-- 合并的快速打卡区域，放在智能情绪标签上方 -->
           <div class="quick-emoji-block">
-            <p class="title">用一个表情描述现在的你</p>
+            <div class="title-row">
+              <p class="title">用一个表情描述现在的你</p>
+              <button class="manage-btn" type="button" @click="openManageDialog">管理</button>
+            </div>
             <div class="emoji-row">
               <button
                 v-for="option in appStore.diary.quickEmojis"
@@ -216,6 +310,49 @@ onMounted(() => {
       </section>
     </div>
   </AppShell>
+
+  <!-- 管理快速表情对话框 -->
+  <el-dialog v-model="manageDialogVisible" title="管理快速表情" width="560px" class="quick-emoji-dialog">
+    <div class="current-emojis">
+      <p class="section-label">当前表情（点击删除）</p>
+      <div class="emoji-grid">
+        <div
+          v-for="qe in appStore.diary.quickEmojis"
+          :key="qe.emoji"
+          class="emoji-item"
+          @click="removeQuickEmoji(qe.emoji)"
+          :title="`删除: ${qe.label}`"
+        >
+          <span class="emo">{{ qe.emoji }}</span>
+          <span class="lbl">{{ qe.label }}</span>
+          <span class="del-hint">×</span>
+        </div>
+        <p v-if="!appStore.diary.quickEmojis.length" class="empty">暂无表情</p>
+      </div>
+    </div>
+
+    <div class="add-form">
+      <p class="section-label">新增表情</p>
+      <div class="row">
+        <div class="emoji-picker-field">
+          <input class="emoji-display" v-model="newEmoji" placeholder="表情" @input="sanitizeEmojiInput" @click="emojiPaletteVisible = !emojiPaletteVisible" />
+          <button type="button" class="toggle-emoji" @click="emojiPaletteVisible = !emojiPaletteVisible">选择</button>
+          <div v-if="emojiPaletteVisible" class="emoji-palette" @click.stop>
+            <div class="palette-grid">
+              <button type="button" v-for="emo in emojiPalette" :key="emo" @click="selectPaletteEmoji(emo)">{{ emo }}</button>
+            </div>
+          </div>
+        </div>
+        <input class="label-input" v-model="newLabel" maxlength="6" placeholder="标签(<=6)" />
+        <button type="button" class="add-btn" @click="addQuickEmoji">添加</button>
+      </div>
+      <small class="hint-line">上限 {{ QUICK_EMOJI_LIMIT }} 个；点击上方已有表情即可删除；可直接输入或使用“选择”面板。</small>
+    </div>
+
+    <template #footer>
+      <el-button @click="manageDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -576,4 +713,40 @@ onMounted(() => {
     gap: 0.4rem;
   }
 }
+
+.title-row { display: flex; align-items: center; justify-content: space-between; }
+.manage-btn {
+  border: 1px solid rgba(93,130,255,0.35);
+  background: rgba(255,255,255,0.7);
+  color: #4a5d8a;
+  padding: 0.35rem 0.8rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background .2s;
+}
+.manage-btn:hover { background: #fff; }
+.quick-emoji-dialog :deep(.el-dialog__body){ padding-top: 0.5rem; }
+.current-emojis { margin-bottom: 1rem; }
+.section-label { margin: 0 0 .4rem; font-size: .85rem; color: #5c6b93; font-weight: 600; }
+.emoji-grid { display: flex; flex-wrap: wrap; gap: .6rem; }
+.emoji-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: .25rem; padding: .55rem .55rem .4rem; background: #f4f7ff; border: 1px solid rgba(93,130,255,.18); border-radius: 14px; cursor: pointer; min-width: 64px; }
+.emoji-item:hover { background: #fff; box-shadow: 0 4px 12px rgba(93,130,255,.18); }
+.emoji-item .emo { font-size: 1.4rem; }
+.emoji-item .lbl { font-size: .7rem; color: #4a5d8a; font-weight: 600; }
+.emoji-item .del-hint { position: absolute; top: 2px; right: 6px; font-size: .85rem; color: #8b98b8; }
+.add-form .row { display: flex; align-items: stretch; gap: .6rem; flex-wrap: wrap; }
+.emoji-picker-field { position: relative; display: flex; align-items: center; }
+.emoji-display { width: 70px; text-align: center; font-size: 1.3rem; border: 1px solid rgba(93,130,255,.35); border-radius: 12px; background: #fff; padding: .4rem .5rem; cursor: pointer; }
+.toggle-emoji { margin-left: .4rem; border: none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.45rem .8rem; border-radius:12px; cursor: pointer; font-size:.75rem; font-weight:600; }
+.emoji-palette { position: absolute; left: 0; top: 105%; z-index: 30; width: 320px; max-height: 260px; overflow: auto; background: #fff; border: 1px solid rgba(93,130,255,.3); border-radius: 18px; box-shadow: 0 12px 28px rgba(93,130,255,.25); padding: .6rem; }
+.palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: .35rem; }
+.palette-grid button { border: none; background: #f3f6ff; border-radius: 10px; padding: .35rem 0; font-size: 1.1rem; cursor: pointer; transition: background .15s; }
+.palette-grid button:hover { background: #e2eaff; }
+.label-input { width: 120px; border:1px solid rgba(93,130,255,.35); border-radius:12px; padding:.45rem .7rem; font: inherit; }
+.add-btn { border:none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.55rem 1.1rem; border-radius:14px; font-weight:600; cursor:pointer; box-shadow:0 6px 14px rgba(93,130,255,.25); }
+.add-btn:hover { box-shadow:0 8px 18px rgba(93,130,255,.3); }
+.hint-line { display:block; margin-top:.45rem; font-size:.7rem; color:#6b7aa6; }
+.empty { font-size:.75rem; color:#6b7aa6; }
 </style>

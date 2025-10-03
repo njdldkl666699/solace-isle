@@ -98,8 +98,38 @@ export type WSMessage = {
     content: string | Achievement,
 }
 
+// 新增：快选心情表情类型（支持自定义标记）
+export type QuickEmoji = { emoji: string; label: string; custom?: boolean };
+
 export const useAppStore = defineStore("app", {
-  state: () => ({
+  state: () => {
+    // 默认的预设快速表情
+    const defaultQuickEmojis: QuickEmoji[] = [
+      { emoji: "🤩", label: "超充实" },
+      { emoji: "😊", label: "被照亮" },
+      { emoji: "😐", label: "平平淡淡" },
+      { emoji: "😔", label: "有点低落" },
+      { emoji: "😣", label: "紧绷" },
+      { emoji: "🥱", label: "想休息" },
+    ];
+
+    // 从本地存储恢复完整表情列表（用户可能已删除默认项）
+    let loadedQuickEmojis: QuickEmoji[] | null = null;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('quickEmojisPersisted');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.every(e => e && e.emoji && e.label)) {
+            loadedQuickEmojis = parsed as QuickEmoji[];
+          }
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    const effectiveQuickEmojis = loadedQuickEmojis !== null ? loadedQuickEmojis : defaultQuickEmojis;
+
+    return {
     isAuthenticated: false,
     token: "",
     greeting: "你好",
@@ -130,14 +160,7 @@ export const useAppStore = defineStore("app", {
       quickReminders: [] as string[],
     },
     diary: {
-      quickEmojis: [
-        { emoji: "🤩", label: "超充实" },
-        { emoji: "😊", label: "被照亮" },
-        { emoji: "😐", label: "平平淡淡" },
-        { emoji: "😔", label: "有点低落" },
-        { emoji: "😣", label: "紧绷" },
-        { emoji: "🥱", label: "想休息" },
-      ],
+      quickEmojis: effectiveQuickEmojis as QuickEmoji[],
       entries: [] as DiaryEntry[],
       smartTags: ["考试压力", "团队合作", "情绪稳定性"],
     },
@@ -308,7 +331,7 @@ export const useAppStore = defineStore("app", {
         },
       ] satisfies TreeholePost[],
     },
-  }),
+  }},
   getters: {
     activeChatSession(state): ChatSession | undefined {
       return state.chat.sessions.find((session) => session.id === state.chat.activeSessionId);
@@ -387,6 +410,47 @@ export const useAppStore = defineStore("app", {
         createdAt: timestamp,
       });
       session.updatedAt = timestamp;
+    },
+    addQuickEmoji(emoji: string, label: string): boolean {
+      if (!emoji || !label) return false;
+      if (this.diary.quickEmojis.some(e => e.emoji === emoji)) return false; // 避免重复
+      this.diary.quickEmojis.push({ emoji, label, custom: true });
+      this.persistQuickEmojis();
+      return true;
+    },
+    removeQuickEmoji(emoji: string): boolean {
+      const idx = this.diary.quickEmojis.findIndex(e => e.emoji === emoji);
+      if (idx === -1) return false;
+      this.diary.quickEmojis.splice(idx, 1);
+      this.persistQuickEmojis();
+      return true;
+    },
+    persistQuickEmojis(){
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('quickEmojisPersisted', JSON.stringify(this.diary.quickEmojis));
+        }
+      } catch(_) { /* ignore */ }
+    },
+    // 兼容旧数据迁移：若存在旧 key 则合并一次
+    migrateOldCustomQuickEmojis(){
+      try {
+        if (typeof localStorage === 'undefined') return;
+        if (localStorage.getItem('quickEmojisPersisted')) return; // 已有新结构
+        const rawOld = localStorage.getItem('customQuickEmojis');
+        if (!rawOld) return;
+        const old = JSON.parse(rawOld);
+        if (Array.isArray(old)) {
+          const existing = this.diary.quickEmojis.map(e => e.emoji);
+            old.forEach((o: any) => {
+              if (o && o.emoji && o.label && !existing.includes(o.emoji)) {
+                this.diary.quickEmojis.push({ emoji: o.emoji, label: o.label, custom: true });
+              }
+            });
+          this.persistQuickEmojis();
+          localStorage.removeItem('customQuickEmojis');
+        }
+      } catch(_) { /* ignore */ }
     },
   },
 });
