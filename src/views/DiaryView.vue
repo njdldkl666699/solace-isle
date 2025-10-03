@@ -60,13 +60,50 @@ const moodForDate = (date: Date) => {
 };
 
 const smartTags = ref<string[]>([]);
+const tagInput = ref("");
+// 新增：内部输入框 ref 与聚焦方法
+const tagInnerInput = ref<HTMLInputElement | null>(null);
+const focusTagInput = () => tagInnerInput.value?.focus();
 
+// 新增：提交输入标签
+const commitTag = () => {
+  const value = tagInput.value.trim();
+  if (!value) return;
+  if (!smartTags.value.includes(value)) {
+    smartTags.value.push(value);
+  }
+  tagInput.value = "";
+};
+
+// 新增：键盘事件（回车提交）
+const handleTagKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    commitTag();
+  }
+};
+
+// 新增：移除标签
+const removeSmartTag = (tag: string) => {
+  smartTags.value = smartTags.value.filter(t => t !== tag);
+  // 同步移除已选中的 draft.tags
+  const idx = draft.tags.indexOf(tag);
+  if (idx !== -1) draft.tags.splice(idx, 1);
+};
+
+// 生成智能标签保持不变
 const getSmartTags = async () => {
   try {
     const response = await api.post("/diary/tags", { content: draft.content });
 
     if(response.data.code === 1){
-      smartTags.value.push(response.data.data);
+      // 后端若返回数组或单个标签，做兼容
+      const data = response.data.data;
+      if (Array.isArray(data)) {
+        data.forEach((t: string) => { if (t && !smartTags.value.includes(t)) smartTags.value.push(t); });
+      } else if (typeof data === 'string') {
+        if (data && !smartTags.value.includes(data)) smartTags.value.push(data);
+      }
     }else {
       ElMessage.error("无法生成情绪标签");
     }
@@ -247,20 +284,33 @@ watch(newEmoji, () => sanitizeEmojiInput());
 
           <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
 
-          <div class="tag-suggestions">
-            <span>情绪标签<button @click="getSmartTags">智能生成</button></span>
-            <div class="chips">
-              <button
+          <!-- 替换：标签输入与展示框 -->
+          <div class="tag-area">
+            <div class="tag-header">
+              <span class="label">情绪标签</span>
+              <button type="button" class="gen-btn" @click="getSmartTags">智能生成</button>
+            </div>
+            <div class="tag-input-wrapper" @click="focusTagInput">
+              <div
                 v-for="tag in smartTags"
                 :key="tag"
-                type="button"
-                class="chip"
+                class="tag-item"
                 :class="{ selected: draft.tags.includes(tag) }"
-                @click="addTag(tag)"
+                @click.stop="addTag(tag)"
               >
-                #{{ tag }}
-              </button>
+                <span class="hash">#</span>{{ tag }}
+                <button type="button" class="remove-tag" title="删除" @click.stop="removeSmartTag(tag)">×</button>
+              </div>
+              <input
+                ref="tagInnerInput"
+                v-model="tagInput"
+                placeholder="输入后回车创建…"
+                @keydown="handleTagKeydown"
+                class="tag-text-input"
+                maxlength="12"
+              />
             </div>
+            <small class="tag-hint">点击标签可添加到日记，再次点击可忽略；点击 × 删除标签。</small>
           </div>
 
           <div class="attachments">
@@ -457,36 +507,22 @@ watch(newEmoji, () => sanitizeEmojiInput());
   font-size: 1.6rem;
 }
 
-.tag-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  color: #5c6b93;
-}
+.tag-area { display: flex; flex-direction: column; gap: .5rem; }
+.tag-header { display: flex; align-items: center; justify-content: space-between; }
+.tag-header .label { font-size: .9rem; font-weight: 600; color:#4a5d8a; }
+.gen-btn { border:1px solid rgba(93,130,255,.4); background:rgba(255,255,255,.85); color:#4a5d8a; padding:.35rem .9rem; border-radius:14px; font-size:.75rem; font-weight:600; cursor:pointer; transition:background .2s, box-shadow .2s; }
+.gen-btn:hover { background:#fff; box-shadow:0 4px 10px rgba(93,130,255,.18); }
 
-.chips {
-  margin-top: 0.4rem;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.chip {
-  border: 1px solid rgba(93, 130, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.35rem 0.9rem;
-  cursor: pointer;
-  color: #445784;
-  transition: all 0.2s ease;
-}
-
-.chip.selected,
-.chip:hover {
-  border-color: rgba(93, 130, 255, 0.6);
-  background: rgba(93, 130, 255, 0.12);
-}
+.tag-input-wrapper { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.55rem .7rem; min-height:54px; border:1px solid rgba(93,130,255,.28); background:rgba(255,255,255,.9); border-radius:18px; cursor:text; }
+.tag-item { position:relative; display:inline-flex; align-items:center; gap:.25rem; padding:.35rem .85rem .35rem .7rem; font-size:.75rem; font-weight:600; background:linear-gradient(135deg,#eef3ff,#f8faff); color:#486098; border:1px solid rgba(93,130,255,.35); border-radius:999px; line-height:1; cursor:pointer; transition:background .2s, border-color .2s, transform .15s; }
+.tag-item.selected { background:rgba(93,130,255,.18); border-color:rgba(93,130,255,.6); }
+.tag-item:hover { border-color:rgba(93,130,255,.55); }
+.tag-item .hash { opacity:.6; }
+.remove-tag { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border:none; background:#fff; color:#5d74a7; font-size:12px; font-weight:600; border-radius:50%; box-shadow:0 2px 6px rgba(93,130,255,.35); cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
+.remove-tag:hover { background:#5d82ff; color:#fff; }
+.tag-text-input { flex:1; min-width:120px; border:none; outline:none; background:transparent; padding:.35rem .2rem; font:inherit; color:#2f3a60; }
+.tag-text-input::placeholder { color:#8fa0c3; font-size:.75rem; }
+.tag-hint { font-size:.65rem; color:#6b7aa6; }
 
 .attachments {
   display: flex;
