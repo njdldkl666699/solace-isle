@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import {ElMessage} from "element-plus";
 
 type HistoryView = "list" | "calendar";
 
@@ -19,10 +21,10 @@ const draft = reactive({
 
 const entries = computed(() => appStore.diary.entries);
 
-const latestDate = computed(() => entries.value[0]?.date ?? new Date().toISOString().slice(0, 10));
-const activeMonth = ref(new Date(latestDate.value));
+const currentDate = computed(() => new Date().toISOString().slice(0, 10));
+const activeMonth = ref(new Date(currentDate.value));
 
-const calendarMap = computed(() => appStore.diary.calendar);
+const calendarMap = computed(() => appStore.diary.entries);
 
 const monthInfo = computed(() => {
   const year = activeMonth.value.getFullYear();
@@ -51,7 +53,7 @@ const monthInfo = computed(() => {
 
 const moodForDate = (date: Date) => {
   const key = date.toISOString().slice(0, 10);
-  return calendarMap.value[key];
+  return calendarMap.value.find((entry) => entry.date === key)?.moodEmoji || "";
 };
 
 const smartTags = computed(() => appStore.diary.smartTags);
@@ -90,6 +92,26 @@ const handleFileChange = (event: Event) => {
   const file = target.files?.[0];
   draft.attachmentName = file?.name ?? "";
 };
+
+const getEntries = async () => {
+  try {
+    // 这里的 date 参数需要传入当前要查询的月份，格式为 YYYY-MM
+    const date = `${activeMonth.value.getFullYear()}-${String(activeMonth.value.getMonth() + 1).padStart(2, '0')}`;
+    const response = await api.get("/diary", { params: { date:  date} });
+
+    if(response.data.code === 1){
+      appStore.updateEntries(response.data.data);
+    }else {
+      ElMessage.error("无法获取心灵日记");
+    }
+  }catch (err: any){
+    ElMessage.error("无法获取心灵日记");
+  }
+}
+
+onMounted(() => {
+  getEntries();
+});
 </script>
 
 <template>
@@ -156,13 +178,19 @@ const handleFileChange = (event: Event) => {
             <button type="button" :class="{ active: historyView === 'calendar' }" @click="historyView = 'calendar'">日历</button>
           </div>
         </div>
+        <div class="calendar-nav">
+          <button type="button" @click="goPrevMonth">←</button>
+          <span>{{ monthInfo.label }}</span>
+          <button type="button" @click="goNextMonth">→</button>
+        </div>
         <div v-if="historyView === 'list'" class="entry-list">
-          <article v-for="entry in entries" :key="entry.id" class="entry-card">
+          <article v-for="entry in entries" :key="entry.date" class="entry-card">
             <header>
               <span class="emoji">{{ entry.moodEmoji }}</span>
               <div>
                 <p class="date">{{ entry.date }}</p>
                 <p class="label">{{ entry.moodLabel }}</p>
+                <img v-if="entry.image" :src="entry.image" alt="图片不见了"/>
               </div>
               <div class="tags">
                 <span v-for="tag in entry.tags" :key="tag">#{{ tag }}</span>
@@ -172,11 +200,6 @@ const handleFileChange = (event: Event) => {
           </article>
         </div>
         <div v-else class="calendar-view">
-          <div class="calendar-nav">
-            <button type="button" @click="goPrevMonth">←</button>
-            <span>{{ monthInfo.label }}</span>
-            <button type="button" @click="goNextMonth">→</button>
-          </div>
           <div class="calendar-grid">
             <span class="weekday" v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day">周{{ day }}</span>
             <div

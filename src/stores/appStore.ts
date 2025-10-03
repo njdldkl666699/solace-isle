@@ -15,13 +15,12 @@ export type Achievement = {
 };
 
 export type DiaryEntry = {
-  id: string;
   date: string;
   moodEmoji: string;
   moodLabel: string;
   content: string;
   tags: string[];
-  imagePreview?: string;
+  image: string | null;
 };
 
 export type ChatMessage = {
@@ -139,41 +138,7 @@ export const useAppStore = defineStore("app", {
         { emoji: "😣", label: "紧绷" },
         { emoji: "🥱", label: "想休息" },
       ],
-      entries: [
-        {
-          id: "entry-1",
-          date: "2025-09-29",
-          moodEmoji: "😊",
-          moodLabel: "被照亮",
-          content: "今天和项目组的伙伴碰头，大家对我的想法表示了肯定。虽然准备演示时还是紧张，但被认可的感觉很踏实。",
-          tags: ["被认可", "学习"],
-        },
-        {
-          id: "entry-2",
-          date: "2025-09-28",
-          moodEmoji: "😔",
-          moodLabel: "略微低落",
-          content: "晚上一个人在宿舍，忽然有点想家。试着写下想法后，感觉心里的结慢慢松开了。",
-          tags: ["思念"],
-        },
-        {
-          id: "entry-3",
-          date: "2025-09-26",
-          moodEmoji: "😣",
-          moodLabel: "紧绷",
-          content: "明天要路演，总觉得准备得不够充分。AI伙伴推荐我做“证据清单”练习，稍微安心了一些。",
-          tags: ["压力", "CBT练习"],
-        },
-      ] satisfies DiaryEntry[],
-      calendar: {
-        "2025-09-23": "😊",
-        "2025-09-24": "😐",
-        "2025-09-25": "😔",
-        "2025-09-26": "😣",
-        "2025-09-27": "😐",
-        "2025-09-28": "😔",
-        "2025-09-29": "😊",
-      } as Record<string, string>,
+      entries: [] as DiaryEntry[],
       smartTags: ["考试压力", "团队合作", "情绪稳定性"],
     },
     chat: {
@@ -384,6 +349,9 @@ export const useAppStore = defineStore("app", {
     },
     updateQuickReminders(reminders: string[]){
       this.dashboardSummary.quickReminders = reminders;
+    },
+    updateEntries(entries: DiaryEntry[]){
+      this.diary.entries = entries;
     },
     calcGreeting(){
       const h = new Date().getHours();
