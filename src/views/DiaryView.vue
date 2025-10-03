@@ -13,11 +13,13 @@ const historyView = ref<HistoryView>("list");
 const selectedEmoji = ref<string>("");
 const entrySaved = ref(false);
 
+// 新增：选择的文件
+const selectedFile = ref<File | null>(null);
+
 const draft = reactive({
   moodEmoji: "",
   moodLabel: "",
   content: "",
-  attachmentName: "",
   image: "",//URL
   tags: [] as string[],
 });
@@ -59,7 +61,7 @@ const moodForDate = (date: Date) => {
   return calendarMap.value.find((entry) => entry.date === key)?.moodEmoji || "";
 };
 
-const smartTags = ref<string[]>([]);
+// const smartTags = ref<string[]>([]);
 const tagInput = ref("");
 // 新增：内部输入框 ref 与聚焦方法
 const tagInnerInput = ref<HTMLInputElement | null>(null);
@@ -69,8 +71,8 @@ const focusTagInput = () => tagInnerInput.value?.focus();
 const commitTag = () => {
   const value = tagInput.value.trim();
   if (!value) return;
-  if (!smartTags.value.includes(value)) {
-    smartTags.value.push(value);
+  if (!draft.tags.includes(value)) {
+    draft.tags.push(value);
   }
   tagInput.value = "";
 };
@@ -85,10 +87,7 @@ const handleTagKeydown = (e: KeyboardEvent) => {
 
 // 新增：移除标签
 const removeSmartTag = (tag: string) => {
-  smartTags.value = smartTags.value.filter(t => t !== tag);
-  // 同步移除已选中的 draft.tags
-  const idx = draft.tags.indexOf(tag);
-  if (idx !== -1) draft.tags.splice(idx, 1);
+  draft.tags = draft.tags.filter(t => t !== tag);
 };
 
 // 生成智能标签保持不变
@@ -100,9 +99,9 @@ const getSmartTags = async () => {
       // 后端若返回数组或单个标签，做兼容
       const data = response.data.data;
       if (Array.isArray(data)) {
-        data.forEach((t: string) => { if (t && !smartTags.value.includes(t)) smartTags.value.push(t); });
+        data.forEach((t: string) => { if (t && !draft.tags.includes(t)) draft.tags.push(t); });
       } else if (typeof data === 'string') {
-        if (data && !smartTags.value.includes(data)) smartTags.value.push(data);
+        if (data && !draft.tags.includes(data)) draft.tags.push(data);
       }
     }else {
       ElMessage.error("无法生成情绪标签");
@@ -112,15 +111,63 @@ const getSmartTags = async () => {
   }
 };
 
-const handleSave = () => {
+const handleSave = async () => {
   entrySaved.value = true;
-  window.setTimeout(() => {
+  // 仅当存在文件时才上传
+  if (selectedFile.value) {
+    draft.image = await uploadFile();
+    if (!draft.image) {
+      entrySaved.value = false;
+      return; // 上传失败则不继续
+    }
+  }
+  try {
+    const response = await api.post("/diary", {
+      moodEmoji: draft.moodEmoji,
+      moodLabel: draft.moodLabel,
+      content: draft.content,
+      image: draft.image,
+      tags: draft.tags,
+    });
+
+    if(response.data.code === 1){
+      await getEntries(); // 保存成功后刷新列表
+      ElMessage.success("已保存到你的私人日记");
+      entrySaved.value = false;
+      draft.moodEmoji="";
+      draft.moodLabel="";
+      draft.content="";
+      draft.image="";
+      draft.tags=[];
+      selectedFile.value = null; // 重置已选文件
+    }else {
+      ElMessage.error("保存失败，请稍后再试");
+      entrySaved.value = false;
+    }
+  }catch (err){
+    ElMessage.error("保存失败，请稍后再试");
     entrySaved.value = false;
-    draft.content = "";
-    draft.attachmentName = "";
-    draft.tags = [];
-    selectedEmoji.value = ""; // clear selected emoji after save
-  }, 1200);
+  }
+};
+
+const uploadFile = async (): Promise<string> => {
+  if (!selectedFile.value) return ""; // 没选择文件则返回空串
+  const formData = new FormData();
+  formData.append("file", selectedFile.value);
+  try {
+    const res = await api.post("/common/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    if (res.data.code === 1) {
+      return res.data.data as string;
+    } else {
+      ElMessage.error("图片上传失败");
+      return "";
+    }
+  } catch (e) {
+    ElMessage.error("图片上传失败");
+    return "";
+  }
 };
 
 const handleEmojiSelect = (emoji: string) => {
@@ -144,16 +191,12 @@ const goNextMonth = () => {
   activeMonth.value = new Date(activeMonth.value.getFullYear(), activeMonth.value.getMonth() + 1, 1);
 };
 
-const addTag = (tag: string) => {
-  if (!draft.tags.includes(tag)) {
-    draft.tags.push(tag);
-  }
-};
-
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  draft.attachmentName = file?.name ?? "";
+  if (file) {
+    selectedFile.value = file;
+  }
 };
 
 const getEntries = async () => {
@@ -292,11 +335,10 @@ watch(newEmoji, () => sanitizeEmojiInput());
             </div>
             <div class="tag-input-wrapper" @click="focusTagInput">
               <div
-                v-for="tag in smartTags"
+                v-for="tag in draft.tags"
                 :key="tag"
                 class="tag-item"
                 :class="{ selected: draft.tags.includes(tag) }"
-                @click.stop="addTag(tag)"
               >
                 <span class="hash">#</span>{{ tag }}
                 <button type="button" class="remove-tag" title="删除" @click.stop="removeSmartTag(tag)">×</button>
@@ -317,9 +359,9 @@ watch(newEmoji, () => sanitizeEmojiInput());
             <label>
               上传图片
               <input type="file" accept="image/*" @change="handleFileChange" />
-              <small v-if="draft.attachmentName" class="file-name">{{ draft.attachmentName }}</small>
             </label>
           </div>
+          <p v-if="selectedFile" class="file-name">{{ selectedFile.name }}</p>
 
           <div class="save-row">
             <p v-if="entrySaved" class="hint">已保存到你的私人日记。</p>
