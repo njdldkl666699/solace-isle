@@ -162,7 +162,6 @@ export const useAppStore = defineStore("app", {
     diary: {
       quickEmojis: effectiveQuickEmojis as QuickEmoji[],
       entries: [] as DiaryEntry[],
-      smartTags: ["考试压力", "团队合作", "情绪稳定性"],
     },
     chat: {
       sessions: [

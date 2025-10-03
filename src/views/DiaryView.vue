@@ -18,6 +18,7 @@ const draft = reactive({
   moodLabel: "",
   content: "",
   attachmentName: "",
+  image: "",//URL
   tags: [] as string[],
 });
 
@@ -58,7 +59,21 @@ const moodForDate = (date: Date) => {
   return calendarMap.value.find((entry) => entry.date === key)?.moodEmoji || "";
 };
 
-const smartTags = computed(() => appStore.diary.smartTags);
+const smartTags = ref<string[]>([]);
+
+const getSmartTags = async () => {
+  try {
+    const response = await api.post("/diary/tags", { content: draft.content });
+
+    if(response.data.code === 1){
+      smartTags.value.push(response.data.data);
+    }else {
+      ElMessage.error("无法生成情绪标签");
+    }
+  }catch (err: any){
+    ElMessage.error("无法生成情绪标签");
+  }
+};
 
 const handleSave = () => {
   entrySaved.value = true;
@@ -233,7 +248,7 @@ watch(newEmoji, () => sanitizeEmojiInput());
           <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
 
           <div class="tag-suggestions">
-            <span>智能情绪标签</span>
+            <span>情绪标签<button @click="getSmartTags">智能生成</button></span>
             <div class="chips">
               <button
                 v-for="tag in smartTags"
