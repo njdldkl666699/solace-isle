@@ -378,13 +378,15 @@ onUnmounted(() => {
       <section class="achievements">
         <h4>我的成就勋章</h4>
         <div class="grid">
-          <article v-for="item in achievedAchievements" :key="item.name">
+          <article v-for="item in achievedAchievements" :key="item.name" class="achieved">
+            <span class="status-badge done">已完成</span>
             <span class="icon">{{ item.icon }}</span>
             <h5>{{ item.name }}</h5>
             <p>{{ item.description }}</p>
             <time>{{ item.achievedAt }}</time>
           </article>
           <article v-for="item in unachievedAchievements" :key="item.name">
+            <span class="status-badge undone">未完成</span>
             <span class="icon">{{ item.icon }}</span>
             <h5>{{ item.name }}</h5>
             <p>{{ item.description }}</p>
@@ -631,18 +633,32 @@ h4 {
   gap: 1.2rem;
 }
 
-.achievements article {
+.achievements .grid article {
   background: rgba(246, 249, 255, 0.9);
   border-radius: 20px;
   padding: 1.4rem;
   border: 1px solid rgba(93, 130, 255, 0.1);
   display: grid;
   gap: 0.6rem;
+  position: relative;
 }
 
 .icon {
   font-size: 1.8rem;
 }
+
+.status-badge {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  pointer-events: none;
+  user-select: none;
+}
+.status-badge.done { color: #e03131; }
+.status-badge.undone { color: #909399; }
 
 /* Modal styles */
 .modal-backdrop {
