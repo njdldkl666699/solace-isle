@@ -336,8 +336,10 @@ onUnmounted(() => {
           <p class="id">学号（脱敏）：{{ appStore.user.studentId.slice(0, 4) }}****</p>
           <p class="motto">“{{ appStore.user.motto }}”</p>
         </div>
-        <button type="button" @click="openEditDialog">编辑资料</button>
-        <button type="button" @click="appStore.logout()">退出登录</button>
+        <div class="hero-actions">
+          <button type="button" @click="openEditDialog">编辑资料</button>
+          <button type="button" class="logout-btn" @click="appStore.logout()">退出登录</button>
+        </div>
       </section>
 
       <section class="settings">
@@ -471,7 +473,7 @@ onUnmounted(() => {
                 <input v-model="emailForm.code" type="text" placeholder="输入验证码" />
                 <button class="ghost small" :disabled="emailForm.sending || emailForm.countdown>0" @click="sendEmailCode">
                   <span v-if="emailForm.countdown===0">{{ emailForm.sending ? '发送中…' : '发送验证码' }}</span>
-                  <span v-else>{{ emailForm.countdown }}s</span>
+                  <span v-else>{{ emailForm.countdown }}秒后可重新发送</span>
                 </button>
               </div>
             </div>
@@ -501,6 +503,8 @@ onUnmounted(() => {
   padding: 2rem 2.4rem;
   border: 1px solid rgba(93, 130, 255, 0.12);
   box-shadow: 0 18px 32px rgba(93, 120, 190, 0.12);
+  position: relative; /* allow absolute logout positioning */
+  padding-bottom: 2rem; /* revert from 3rem since logout is no longer absolute */
 }
 
 .hero-card img {
@@ -536,6 +540,26 @@ onUnmounted(() => {
   font-weight: 600;
   cursor: pointer;
 }
+
+.hero-card .logout-btn {
+  background: #eef1f5;
+  color: #7a8896;
+  border: 1px solid #d5dbe2;
+  padding: 0.6rem 1.2rem;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
+}
+.hero-card .logout-btn:hover {
+  background: #e2e8ee;
+  color: #5d6b78;
+  border-color: #c5ced6;
+  box-shadow: 0 4px 10px -4px rgba(0,0,0,0.08);
+}
+.hero-card .logout-btn:active { box-shadow: none; }
+.hero-card .hero-actions { display: flex; flex-direction: column; gap: .65rem; align-items: flex-end; }
+.hero-card .hero-actions button { width: 100%; }
 
 .settings,
 .achievements {
@@ -652,14 +676,70 @@ h4 {
   position: absolute;
   top: 6px;
   right: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  /* layout */
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .36rem .78rem .42rem; /* enlarged padding */
+  border-radius: 999px;
+  font-size: .85rem; /* was .7rem */
+  letter-spacing: 1.2px; /* slightly more spacing for bigger text */
+  line-height: 1;
   pointer-events: none;
   user-select: none;
+  /* glass / depth */
+  backdrop-filter: blur(6px) saturate(160%);
+  -webkit-backdrop-filter: blur(6px) saturate(160%);
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,.15), 0 4px 12px -2px rgba(0,0,0,.12);
+  position: absolute;
+  overflow: hidden;
 }
-.status-badge.done { color: #3af62b; }
-.status-badge.undone { color: #ef1414; }
+.status-badge::before {
+  font-size: .85rem; /* sync with main font-size */
+  font-weight: 600;
+  transform: translateY(-2px); /* adjust vertical alignment after size increase */
+}
+/* Achieved (已完成) */
+.status-badge.done {
+  color: #1f7a34;
+  background: linear-gradient(135deg,#e4f9ea,#d0f3dc 45%,#bfeccf);
+  border: 1px solid rgba(47,158,68,.45);
+  text-shadow: 0 1px 0 rgba(255,255,255,.65);
+}
+.status-badge.done::before { content: '✔'; }
+/* Unachieved (未完成) now red */
+.status-badge.undone {
+  color: #b61616;
+  background: linear-gradient(135deg,#ffe6e6,#ffd0d0 45%,#ffc1c1);
+  border: 1px solid rgba(224,49,49,.45);
+  text-shadow: 0 1px 0 rgba(255,255,255,.6);
+}
+.status-badge.undone::before { content: '✧'; }
+/* Subtle shine animation for achieved */
+.status-badge.done::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 160%; height: 100%;
+  background: linear-gradient(115deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 70%);
+  transform: translateX(0);
+  animation: badge-shine 3.8s linear infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+@keyframes badge-shine {
+  0% { transform: translateX(0); opacity: .15; }
+  55% { opacity: .55; }
+  100% { transform: translateX(60%); opacity: 0; }
+}
+/* Focus on reduced motion users */
+@media (prefers-reduced-motion: reduce) {
+  .status-badge.done::after { animation: none; opacity: .25; }
+}
+/* Hover reveal (desktop only) - slight lift */
+@media (hover: hover) and (pointer: fine) {
+  .achievements .grid article:hover .status-badge { box-shadow: 0 4px 10px -2px rgba(0,0,0,.22), 0 2px 4px -1px rgba(0,0,0,.18); }
+}
 
 /* Modal styles */
 .modal-backdrop {
@@ -784,7 +864,39 @@ h4 {
 
 .code-row .code-input-group { display: flex; gap: .6rem; }
 .code-input-group input { flex: 1; }
-.code-input-group button { white-space: nowrap; }
+/* 发送验证码按钮：浅蓝色圆角胶囊样式 */
+.code-row .code-input-group button.ghost.small {
+  border-radius: 999px;
+  background: #e6f2ff; /* 浅蓝底 */
+  border: 1px solid #b5d7ff;
+  color: #1b4d7d;
+  font-weight: 600;
+  padding: .55rem 1.15rem;
+  line-height: 1;
+  transition: background .18s, transform .18s, box-shadow .18s;
+}
+.code-row .code-input-group button.ghost.small:hover:not(:disabled) {
+  background: #d8ecff;
+  box-shadow: 0 4px 10px -4px rgba(60,120,200,.35);
+  transform: translateY(-2px);
+}
+.code-row .code-input-group button.ghost.small:active:not(:disabled) {
+  transform: translateY(0);
+  background: #cfe7ff;
+}
+.code-row .code-input-group button.ghost.small:disabled {
+  background: #cfe4f7;
+  color: #5f7792;
+  border-color: #bfd8ef;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+/* 移动端/无 hover 环境下避免悬浮位移闪烁 */
+@media (hover: none) {
+  .code-row .code-input-group button.ghost.small:hover:not(:disabled) { transform: none; box-shadow: none; }
+}
+
 button.small { padding: .55rem .9rem; font-size: .75rem; }
 
 @media (max-width: 960px) {
