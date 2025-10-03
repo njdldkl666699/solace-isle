@@ -400,6 +400,9 @@ h3 {
   list-style: none;
   display: grid;
   gap: 1rem;
+  max-height: 100px; /* 超过该高度出现竖向滚动 */
+  overflow-y: auto;
+  padding-right: 4px; /* 给滚动条留空间，避免遮挡内容 */
 }
 
 .achievements li {
@@ -442,7 +445,22 @@ h3 {
   color: #54648d;
   display: grid;
   gap: 0.5rem;
+  max-height: 100px; /* 超过该高度出现竖向滚动 */
+  overflow-y: auto;
+  padding-right: 4px;
 }
+
+/* 自定义滚动条（WebKit） */
+.achievements ul::-webkit-scrollbar,
+.reminders ul::-webkit-scrollbar { width: 6px; }
+.achievements ul::-webkit-scrollbar-track,
+.reminders ul::-webkit-scrollbar-track { background: rgba(93,130,255,0.08); border-radius: 8px; }
+.achievements ul::-webkit-scrollbar-thumb,
+.reminders ul::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#7496ff,#5d82ff); border-radius: 8px; }
+.achievements ul::-webkit-scrollbar-thumb:hover,
+.reminders ul::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg,#5d82ff,#4b72ef); }
+
+/* 非 WebKit 浏览器将回退系统默认滚动条 */
 
 @media (max-width: 1080px) {
   .hero-card {

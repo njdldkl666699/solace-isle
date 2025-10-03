@@ -114,7 +114,7 @@ const handleFileChange = (event: Event) => {
             </div>
           </div>
 
-           <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
+          <textarea v-model="draft.content" placeholder="此刻，你有什么想说的…" rows="8" />
 
           <div class="tag-suggestions">
             <span>智能情绪标签</span>
@@ -202,6 +202,33 @@ const handleFileChange = (event: Event) => {
   gap: 2rem;
 }
 
+/* 新增：恢复容器布局并统一内部元素间距（含表情块与 textarea 之间的间距）*/
+.text-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem; /* 控制表情选择区与 textarea 之间、以及其他元素的竖直间距 */
+}
+
+.text-entry textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: vertical; /* 仅上下拖动 */
+  padding: 0.9rem 1rem;
+  line-height: 1.5;
+  font: inherit;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(93,130,255,0.28);
+  border-radius: 18px;
+  color: #2f3a60;
+  overflow: auto;
+}
+.text-entry textarea:focus {
+  outline: none;
+  border-color: #5d82ff;
+  box-shadow: 0 0 0 3px rgba(93,130,255,0.18);
+}
+
 .record-panel,
 .history-panel {
   background: rgba(255, 255, 255, 0.86);
@@ -212,12 +239,6 @@ const handleFileChange = (event: Event) => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-}
-
-.text-entry {
-  display: flex;
-  flex-direction: column;
-  gap: 1.4rem;
 }
 
 .quick-emoji-block {

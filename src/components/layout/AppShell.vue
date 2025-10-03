@@ -145,7 +145,18 @@ onMounted(() => {
           <img :src="appStore.user.avatar" alt="用户头像" class="avatar" />
           <div>
             <p class="nickname">{{ appStore.user.nickname }}</p>
-            <p class="motto">{{ appStore.user.motto }}</p>
+            <!-- 截断显示 motto，超过 6 个字符时用省略号，并在悬浮时弹出完整内容 -->
+            <el-tooltip
+              v-if="appStore.user.motto && appStore.user.motto.length > 6"
+              :content="appStore.user.motto"
+              placement="bottom"
+              effect="light"
+              :show-after="120"
+              hide-after="0"
+            >
+              <p class="motto motto-ellipsis">{{ appStore.user.motto.slice(0,6) }}…</p>
+            </el-tooltip>
+            <p v-else class="motto">{{ appStore.user.motto }}</p>
           </div>
         </div>
       </div>
@@ -273,6 +284,10 @@ onMounted(() => {
   margin: 0;
   font-size: 0.8rem;
   color: #5b6a86;
+}
+.motto-ellipsis {
+  cursor: pointer;
+  user-select: none;
 }
 
 .app-shell__main {
