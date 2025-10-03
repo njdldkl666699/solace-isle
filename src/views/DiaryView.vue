@@ -356,6 +356,45 @@ onMounted(() => {
   border-radius: 14px;
   border: 1px dashed rgba(13, 246, 32, 0.3);
   background: rgba(255, 255, 255, 0.85);
+  font: inherit;
+  cursor: pointer;
+}
+/* 自定义文件选择按钮为圆角胶囊 */
+.attachments input[type="file"]::file-selector-button,
+.attachments input[type="file"]::-webkit-file-upload-button {
+  margin-right: .9rem;
+  background: linear-gradient(135deg,#5d82ff,#8fa3ff);
+  color: #fff;
+  border: 1px solid #5d82ff;
+  padding: .5rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: .8rem;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: background .2s ease, box-shadow .2s ease, transform .15s ease;
+}
+.attachments input[type="file"]::file-selector-button:hover,
+.attachments input[type="file"]::-webkit-file-upload-button:hover {
+  background: linear-gradient(135deg,#5477ee,#7d97f5);
+  box-shadow: 0 6px 16px -4px rgba(93,130,255,.45);
+}
+.attachments input[type="file"]::file-selector-button:active,
+.attachments input[type="file"]::-webkit-file-upload-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 10px -3px rgba(93,130,255,.4);
+}
+.attachments input[type="file"]:focus-visible::file-selector-button {
+  outline: 2px solid #5d82ff;
+  outline-offset: 2px;
+}
+/* 深色背景兼容（如果以后容器改色） */
+@media (prefers-color-scheme: dark) {
+  .attachments input[type="file"]::file-selector-button,
+  .attachments input[type="file"]::-webkit-file-upload-button {
+    background: linear-gradient(135deg,#6b8dff,#9fb6ff);
+    border-color: #6b8dff;
+  }
 }
 
 .primary {
