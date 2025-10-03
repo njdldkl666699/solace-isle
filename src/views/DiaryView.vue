@@ -841,7 +841,7 @@ watch(newEmoji, () => sanitizeEmojiInput());
 .emoji-item .del-hint { position: absolute; top: 2px; right: 6px; font-size: .85rem; color: #8b98b8; }
 .add-form .row { display: flex; align-items: stretch; gap: .6rem; flex-wrap: wrap; }
 .emoji-picker-field { position: relative; display: flex; align-items: center; }
-.emoji-display { width: 70px; text-align: center; font-size: 1.3rem; border: 1px solid rgba(93,130,255,.35); border-radius: 12px; background: #fff; padding: .4rem .5rem; cursor: pointer; }
+.emoji-display { width: 80px; text-align: center; font-size:0.9rem; border: 1px solid rgba(93,130,255,.35); border-radius: 12px; background: #fff; padding: .4rem .5rem; cursor: pointer; }
 .toggle-emoji { margin-left: .4rem; border: none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.45rem .8rem; border-radius:12px; cursor: pointer; font-size:.75rem; font-weight:600; }
 .emoji-palette { position: absolute; left: 0; top: 105%; z-index: 30; width: 320px; max-height: 260px; overflow: auto; background: #fff; border: 1px solid rgba(93,130,255,.3); border-radius: 18px; box-shadow: 0 12px 28px rgba(93,130,255,.25); padding: .6rem; }
 .palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: .35rem; }
@@ -850,6 +850,6 @@ watch(newEmoji, () => sanitizeEmojiInput());
 .label-input { width: 120px; border:1px solid rgba(93,130,255,.35); border-radius:12px; padding:.45rem .7rem; font: inherit; }
 .add-btn { border:none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.55rem 1.1rem; border-radius:14px; font-weight:600; cursor:pointer; box-shadow:0 6px 14px rgba(93,130,255,.25); }
 .add-btn:hover { box-shadow:0 8px 18px rgba(93,130,255,.3); }
-.hint-line { display:block; margin-top:.45rem; font-size:.7rem; color:#6b7aa6; }
+.hint-line { display:block; margin-top:.45rem; font-size:0.8rem; color:#6b7aa6; }
 .empty { font-size:.75rem; color:#6b7aa6; }
 </style>
