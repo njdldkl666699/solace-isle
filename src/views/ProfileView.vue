@@ -337,6 +337,7 @@ onUnmounted(() => {
           <p class="motto">“{{ appStore.user.motto }}”</p>
         </div>
         <button type="button" @click="openEditDialog">编辑资料</button>
+        <button type="button" @click="appStore.logout()">退出登录</button>
       </section>
 
       <section class="settings">
