@@ -657,8 +657,8 @@ h4 {
   pointer-events: none;
   user-select: none;
 }
-.status-badge.done { color: #e03131; }
-.status-badge.undone { color: #909399; }
+.status-badge.done { color: #3af62b; }
+.status-badge.undone { color: #ef1414; }
 
 /* Modal styles */
 .modal-backdrop {
