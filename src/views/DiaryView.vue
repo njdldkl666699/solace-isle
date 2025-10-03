@@ -482,6 +482,19 @@ onMounted(() => {
   gap: 1rem;
 }
 
+.entry-card header img {
+  display: block;
+  max-width: 360px;          /* 最大宽度 */
+  max-height: 400px;         /* 最大高度 */
+  width: auto;               /* 保持比例 */
+  height: auto;              /* 保持比例 */
+  border-radius: 14px;       /* 圆角与整体风格统一 */
+  object-fit: contain;       /* 完整显示整张图片，不裁剪 */
+  background: #f2f5fa;       /* 若有空白，给一个柔和底色 */
+  margin-top: .4rem;
+  box-shadow: 0 4px 12px rgba(93,130,255,0.12);
+}
+
 .entry-card .emoji {
   font-size: 1.8rem;
 }
