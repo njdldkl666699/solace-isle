@@ -1,8 +1,19 @@
 <script setup lang="ts">
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import { ref } from 'vue';
 
 const appStore = useAppStore();
+// 本地点赞状态（不影响暖心值，只做视觉心形切换）
+const liked = ref<Set<string>>(new Set());
+const toggleLike = (id: string) => {
+  if (liked.value.has(id)) {
+    liked.value.delete(id); // 允许取消，若不需要取消可改成 return;
+  } else {
+    liked.value.add(id);
+  }
+  // 未实现暖心值变动，应你需求仅做样式切换
+};
 </script>
 
 <template>
@@ -19,7 +30,20 @@ const appStore = useAppStore();
             <p class="content">{{ post.content }}</p>
             <footer>
               <time>{{ new Date(post.createdAt).toLocaleString("zh-CN", { hour12: false }) }}</time>
-              <span class="warms">暖心值 {{ post.warms }}</span>
+              <div class="warm-block">
+                <span class="warms">暖心值 {{ post.warms }}</span>
+                <button
+                  type="button"
+                  class="heart-btn"
+                  :class="{ liked: liked.has(post.id) }"
+                  :aria-pressed="liked.has(post.id)"
+                  @click="toggleLike(post.id)"
+                  :title="liked.has(post.id) ? '取消点赞' : '点赞'
+                "
+                >
+                  <span class="icon" aria-hidden="true">{{ liked.has(post.id) ? '❤' : '♡' }}</span>
+                </button>
+              </div>
             </footer>
           </li>
         </ul>
@@ -95,15 +119,44 @@ const appStore = useAppStore();
   justify-content: space-between;
   color: #5c6b93;
   font-size: 0.85rem;
+  align-items: flex-start;
 }
 
-@media (max-width: 780px) {
-  .posts li {
-    grid-template-columns: 1fr;
-  }
-  .emoji {
-    order: -1;
-  }
+.warm-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .45rem;
 }
+.warms { font-weight: 600; }
+
+/* 心形按钮样式 */
+.heart-btn {
+  border:1px solid rgba(255,99,132,.35);
+  background: linear-gradient(135deg,#fff5f7,#ffe3e8);
+  color:#ff5a6f;
+  padding:.42rem .85rem;
+  border-radius:999px;
+  cursor:pointer;
+  font-size:1rem;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition: background .25s ease, transform .15s ease, box-shadow .25s ease, color .25s ease, border-color .25s ease;
+}
+.heart-btn .icon { font-size:1.05rem; filter: drop-shadow(0 1px 2px rgba(255,90,111,.35)); }
+.heart-btn:hover { background: linear-gradient(135deg,#ffeef1,#ffd9e0); box-shadow:0 6px 16px -6px rgba(255,90,111,.45); transform:translateY(-2px); }
+.heart-btn:active { transform:translateY(0); }
+.heart-btn.liked {
+  background: linear-gradient(135deg,#ff5a6f,#ff7f92);
+  color:#fff;
+  border-color: rgba(255,90,111,.6);
+  box-shadow:0 8px 20px -6px rgba(255,90,111,.55);
+}
+.heart-btn.liked .icon { filter: drop-shadow(0 2px 4px rgba(255,90,111,.55)); }
+.heart-btn.liked:hover { background: linear-gradient(135deg,#ff4d63,#ff6d82); }
+
+@media (hover:none) { .heart-btn:hover { transform:none; box-shadow:none; } }
+@media (max-width:780px){ .posts li { grid-template-columns:1fr; } .emoji{ order:-1; } .warm-block { align-items:flex-start; } }
 </style>
-
