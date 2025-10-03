@@ -81,7 +81,7 @@ const connectWebSocket = () => {
     if(message.type == "remind") {
       console.log("Received remind message:", message.content);
       appStore.dashboardSummary.quickReminders.push(message.content as string);
-      showWSNotify("轻声提醒", message.content as string);
+      showWSNotify("📢轻声提醒", message.content as string);
     }else if(message.type == "achievement") {
       appStore.dashboardSummary.recentAchievements.push(message.content as Achievement);
       showWSNotify((message.content as Achievement).icon
