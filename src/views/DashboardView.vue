@@ -400,6 +400,8 @@ h3 {
   list-style: none;
   display: grid;
   gap: 1rem;
+  max-height: 80px; /* 与轻声提醒一致的高度，可根据需要调整 */
+  overflow-y: auto;
 }
 
 .achievements li {
@@ -442,7 +444,20 @@ h3 {
   color: #54648d;
   display: grid;
   gap: 0.5rem;
+  max-height: 50px; /* 新增：超过 50px 出现滚动条 */
+  overflow-y: auto;  /* 新增：竖向滚动 */
+  padding-right: 4px; /* 为滚动条预留内边距避免遮挡文字 */
 }
+
+/* 自定义滚动条：扩展到成就列表 */
+.achievements ul::-webkit-scrollbar,
+.reminders ul::-webkit-scrollbar { width: 6px; }
+.achievements ul::-webkit-scrollbar-track,
+.reminders ul::-webkit-scrollbar-track { background: rgba(93,130,255,0.08); border-radius: 8px; }
+.achievements ul::-webkit-scrollbar-thumb,
+.reminders ul::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#7496ff,#5d82ff); border-radius: 8px; }
+.achievements ul::-webkit-scrollbar-thumb:hover,
+.reminders ul::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg,#5d82ff,#4b72ef); }
 
 @media (max-width: 1080px) {
   .hero-card {
