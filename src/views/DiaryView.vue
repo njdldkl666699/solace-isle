@@ -4,6 +4,7 @@ import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessage } from "element-plus";
+import type { DiaryEntry } from "../stores/appStore";
 
 type HistoryView = "list" | "calendar";
 
@@ -299,6 +300,23 @@ const sanitizeEmojiInput = () => {
 };
 
 watch(newEmoji, () => sanitizeEmojiInput());
+
+const dayEntryDialogVisible = ref(false);
+const dayEntry = ref<DiaryEntry | null>(null);
+
+const openDayEntry = (date: Date) => {
+  const key = date.toISOString().slice(0, 10);
+  const entry = entries.value.find(e => e.date === key) || null;
+  if (entry) {
+    dayEntry.value = entry;
+    dayEntryDialogVisible.value = true;
+  }
+};
+
+const closeDayEntry = () => {
+  dayEntryDialogVisible.value = false;
+  dayEntry.value = null;
+};
 </script>
 
 <template>
@@ -352,7 +370,7 @@ watch(newEmoji, () => sanitizeEmojiInput());
                 maxlength="12"
               />
             </div>
-            <small class="tag-hint">点击标签可添加到日记，再次点击可忽略；点击 × 删除标签。</small>
+            <small class="tag-hint">输入后按回车创建标签 ；点击 × 号删除标签。</small>
           </div>
 
           <div class="attachments">
@@ -407,7 +425,8 @@ watch(newEmoji, () => sanitizeEmojiInput());
               v-for="item in monthInfo.days"
               :key="item.key"
               class="day"
-              :class="{ 'out-month': !item.inMonth }"
+              :class="{ 'out-month': !item.inMonth, 'has-entry': moodForDate(item.date) }"
+              @click="openDayEntry(item.date)"
             >
               <span class="date">{{ item.date.getDate() }}</span>
               <span class="mood" v-if="moodForDate(item.date)">{{ moodForDate(item.date) }}</span>
@@ -458,6 +477,26 @@ watch(newEmoji, () => sanitizeEmojiInput());
 
     <template #footer>
       <el-button @click="manageDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 日记内容查看对话框 -->
+  <el-dialog v-model="dayEntryDialogVisible" width="600px" class="day-entry-dialog" :title="dayEntry ? dayEntry.date + ' 的日记' : '日记'">
+    <div v-if="dayEntry" class="day-entry-body">
+      <div class="header-line">
+        <span class="emoji">{{ dayEntry.moodEmoji }}</span>
+        <div class="meta">
+          <p class="mood-label">{{ dayEntry.moodLabel }}</p>
+          <div class="tags" v-if="dayEntry.tags?.length">
+            <span v-for="tag in dayEntry.tags" :key="tag" class="tag">#{{ tag }}</span>
+          </div>
+        </div>
+      </div>
+      <p class="content">{{ dayEntry.content }}</p>
+      <img v-if="dayEntry.image" :src="dayEntry.image" class="preview" alt="日记图片" />
+    </div>
+    <template #footer>
+      <el-button @click="closeDayEntry">关闭</el-button>
     </template>
   </el-dialog>
 </template>
@@ -655,7 +694,6 @@ watch(newEmoji, () => sanitizeEmojiInput());
 
 .save-row .hint {
   margin: 0;              /* 移除自动推开布局 */
-  margin-right: 0;
 }
 
 .file-name { /* 还原文件名样式，避免空规则警告 */
@@ -806,6 +844,9 @@ watch(newEmoji, () => sanitizeEmojiInput());
   opacity: 0.35;
 }
 
+.day.has-entry { cursor: pointer; border-color: rgba(93,130,255,0.28); box-shadow: 0 4px 10px rgba(93,130,255,0.18); }
+.day.has-entry:hover { background: #fff; }
+
 .day .date {
   font-weight: 600;
   color: #2f3a60;
@@ -894,4 +935,14 @@ watch(newEmoji, () => sanitizeEmojiInput());
 .add-btn:hover { box-shadow:0 8px 18px rgba(93,130,255,.3); }
 .hint-line { display:block; margin-top:.45rem; font-size:0.8rem; color:#6b7aa6; }
 .empty { font-size:.75rem; color:#6b7aa6; }
+
+.day-entry-dialog :deep(.el-dialog__body){ padding-top: .75rem; }
+.day-entry-body { display:flex; flex-direction:column; gap:.9rem; }
+.day-entry-body .header-line { display:flex; align-items:center; gap:.9rem; }
+.day-entry-body .emoji { font-size:2rem; }
+.day-entry-body .mood-label { margin:0; font-weight:600; color:#2f3a60; }
+.day-entry-body .tags { display:flex; flex-wrap:wrap; gap:.4rem; }
+.day-entry-body .tags .tag { background:rgba(93,130,255,.14); padding:.25rem .55rem; border-radius:999px; font-size:.7rem; color:#4a5d8a; }
+.day-entry-body .content { white-space:pre-wrap; line-height:1.55; margin:0; color:#2f3a60; }
+.day-entry-body .preview { max-width:100%; border-radius:16px; box-shadow:0 6px 18px rgba(93,130,255,.15); }
 </style>
