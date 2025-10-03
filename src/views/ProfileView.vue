@@ -1,14 +1,36 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import {computed, onMounted, reactive} from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import {ElMessage} from "element-plus";
 
 const appStore = useAppStore();
+const achievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => item.achievedAt));
+const unachievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => !item.achievedAt));
 
 const settings = reactive({
   shareAggregated: true,
   nightlyReminder: false,
   breathingNotification: true,
+});
+
+const getAchievements = async () => {
+  try {
+    const response = await api.get("/dashboard/achievements");
+
+    if (response.data.code === 1) {
+      appStore.updateAchievements(response.data.data);
+    } else {
+      ElMessage.error("无法获取成就信息");
+    }
+  } catch {
+    ElMessage.error("无法获取成就信息");
+  }
+};
+
+onMounted(() => {
+  getAchievements();
 });
 </script>
 
@@ -64,11 +86,16 @@ const settings = reactive({
       <section class="achievements">
         <h4>我的成就勋章</h4>
         <div class="grid">
-          <article v-for="item in appStore.dashboardSummary.recentAchievements" :key="item.id">
+          <article v-for="item in achievedAchievements" :key="item.name">
             <span class="icon">{{ item.icon }}</span>
             <h5>{{ item.name }}</h5>
             <p>{{ item.description }}</p>
             <time>{{ item.achievedAt }}</time>
+          </article>
+          <article v-for="item in unachievedAchievements" :key="item.name">
+            <span class="icon">{{ item.icon }}</span>
+            <h5>{{ item.name }}</h5>
+            <p>{{ item.description }}</p>
           </article>
         </div>
       </section>
