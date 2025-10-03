@@ -147,16 +147,16 @@ onMounted(() => {
           <img :src="appStore.user.avatar" alt="用户头像" class="avatar" />
           <div>
             <p class="nickname">{{ appStore.user.nickname }}</p>
-            <!-- 截断显示 motto，超过 6 个字符时用省略号，并在悬浮时弹出完整内容 -->
+            <!-- 使用 Tooltip：仅当字数 > 6 时显示截断 + 悬浮弹窗完整文本 -->
             <el-tooltip
               v-if="appStore.user.motto && appStore.user.motto.length > 6"
               :content="appStore.user.motto"
               placement="bottom"
-              effect="light"
               :show-after="120"
+              effect="light"
               hide-after="0"
             >
-              <p class="motto motto-ellipsis">{{ appStore.user.motto.slice(0,6) }}…</p>
+              <p class="motto is-truncated">{{ appStore.user.motto.slice(0, 6) }}…</p>
             </el-tooltip>
             <p v-else class="motto">{{ appStore.user.motto }}</p>
           </div>
