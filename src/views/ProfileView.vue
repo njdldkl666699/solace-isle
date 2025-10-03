@@ -1,14 +1,73 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import {computed, onMounted, reactive, watch} from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import {ElMessage} from "element-plus";
 
 const appStore = useAppStore();
+const achievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => item.achievedAt));
+const unachievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => !item.achievedAt));
 
 const settings = reactive({
-  shareAggregated: true,
+  shareAggregated: false,
   nightlyReminder: false,
-  breathingNotification: true,
+  breathingNotification: false,
+});
+
+const getAchievements = async () => {
+  try {
+    const response = await api.get("/dashboard/achievements");
+
+    if (response.data.code === 1) {
+      appStore.updateAchievements(response.data.data);
+    } else {
+      ElMessage.error("无法获取成就信息");
+    }
+  } catch {
+    ElMessage.error("无法获取成就信息");
+  }
+};
+
+const getSettings = async () => {
+  try {
+    const response = await api.get("/user/settings");
+
+    if (response.data.code === 1) {
+      settings.shareAggregated = response.data.data.shareAggregated;
+      settings.nightlyReminder = response.data.data.nightlyReminder;
+      settings.breathingNotification = response.data.data.breathingNotification;
+    } else {
+      ElMessage.error("无法获取习惯设置信息");
+    }
+  } catch {
+    ElMessage.error("无法获取习惯设置信息");
+  }
+}
+
+const updateSettings = async () => {
+  try {
+    const response = await api.put("/user/settings", {
+      shareAggregated: settings.shareAggregated,
+      nightlyReminder: settings.nightlyReminder,
+      breathingNotification: settings.breathingNotification,
+    });
+
+    if (response.data.code !== 1) {
+      ElMessage.error("无法更新习惯设置信息");
+      await getSettings();
+    }
+  } catch {
+    ElMessage.error("无法更新习惯设置信息");
+    await getSettings();
+  }
+}
+
+watch(settings, updateSettings, { deep: true });
+
+onMounted(() => {
+  getAchievements();
+  getSettings();
 });
 </script>
 
@@ -64,11 +123,16 @@ const settings = reactive({
       <section class="achievements">
         <h4>我的成就勋章</h4>
         <div class="grid">
-          <article v-for="item in appStore.dashboardSummary.recentAchievements" :key="item.id">
+          <article v-for="item in achievedAchievements" :key="item.name">
             <span class="icon">{{ item.icon }}</span>
             <h5>{{ item.name }}</h5>
             <p>{{ item.description }}</p>
             <time>{{ item.achievedAt }}</time>
+          </article>
+          <article v-for="item in unachievedAchievements" :key="item.name">
+            <span class="icon">{{ item.icon }}</span>
+            <h5>{{ item.name }}</h5>
+            <p>{{ item.description }}</p>
           </article>
         </div>
       </section>

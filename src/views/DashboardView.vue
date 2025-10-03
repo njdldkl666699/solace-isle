@@ -40,7 +40,8 @@ const quickActions = computed(() => [
 ]);
 
 const summary = computed(() => appStore.dashboardSummary);
-const achievements = computed(() => summary.value.recentAchievements);
+const achievedAchievements = computed(() => summary.value.Achievements.filter(item => item.achievedAt));
+const unachievedAchievements = computed(() => summary.value.Achievements.filter(item => !item.achievedAt));
 
 const streakText = computed(() => `你已连续记录 ${summary.value.streakDays} 天`);
 
@@ -174,12 +175,19 @@ onMounted(() => {
             <p>记录你的成长瞬间，为坚持的自己点一盏灯。</p>
           </header>
           <ul>
-            <li v-for="item in achievements" :key="item.name">
+            <li v-for="item in achievedAchievements" :key="item.name">
               <span class="badge">{{ item.icon }}</span>
               <div>
                 <p class="title">{{ item.name }}</p>
                 <p class="desc">{{ item.description }}</p>
                 <p class="time">{{ item.achievedAt }}</p>
+              </div>
+            </li>
+            <li v-for="item in unachievedAchievements" :key="item.name">
+              <span class="badge">{{ item.icon }}</span>
+              <div>
+                <p class="title">{{ item.name }}</p>
+                <p class="desc">{{ item.description }}</p>
               </div>
             </li>
           </ul>

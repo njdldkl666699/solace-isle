@@ -80,10 +80,12 @@ const connectWebSocket = () => {
     const message = JSON.parse(event.data) as WSMessage;
     if(message.type == "remind") {
       console.log("Received remind message:", message.content);
-      appStore.dashboardSummary.quickReminders.push(message.content as string);
+      appStore.dashboardSummary.quickReminders.unshift(message.content as string);
       showWSNotify("📢轻声提醒", message.content as string);
     }else if(message.type == "achievement") {
-      appStore.dashboardSummary.recentAchievements.push(message.content as Achievement);
+      appStore.dashboardSummary.Achievements.find(
+          item => item.name === (message.content as Achievement).name
+      )!.achievedAt = (message.content as Achievement).achievedAt;
       showWSNotify((message.content as Achievement).icon
           + "恭喜您达成新成就："
           + (message.content as Achievement).name,

@@ -11,7 +11,7 @@ export type Achievement = {
   name: string;
   description: string;
   icon: string;
-  achievedAt: string;
+  achievedAt: string | null;
 };
 
 export type DiaryEntry = {
@@ -127,7 +127,7 @@ export const useAppStore = defineStore("app", {
           {day: "周六",score: 0, label: "" },
           {day: "周七",score: 0, label: "" },
       ] as WeeklyMoodPoint[],
-      recentAchievements: [] as Achievement[],
+      Achievements: [] as Achievement[],
       quickReminders: [] as string[],
     },
     diary: {
@@ -380,7 +380,7 @@ export const useAppStore = defineStore("app", {
       this.dashboardSummary.weeklyMoodTrend = points;
     },
     updateAchievements(achievements: Achievement[]){
-      this.dashboardSummary.recentAchievements = achievements;
+      this.dashboardSummary.Achievements = achievements;
     },
     updateQuickReminders(reminders: string[]){
       this.dashboardSummary.quickReminders = reminders;
