@@ -489,6 +489,29 @@ const handleFileChange = (event: Event) => {
   font-size: 1.2rem;
 }
 
+/* 新增：限制 textarea 只能竖直方向拉伸，宽度始终占满容器且不可被拖宽 */
+.text-entry textarea {
+  width: 100%;
+  max-width: 100%; /* 防止某些浏览器在 resize:vertical 时仍然可横向溢出 */
+  box-sizing: border-box;
+  resize: vertical; /* 仅允许上下方向 */
+  overflow: auto; /* 保持内容可滚动 */
+  padding: 0.9rem 1rem;
+  line-height: 1.5;/*良好的行高，提升可读性*/
+  border: 1px solid rgba(93,130,255,0.28);
+  border-radius: 18px;/*设置圆角*/
+  background: rgba(255,255,255,0.92);
+  font: inherit;/*继承字体样式*/
+  color: #2f3a60;
+}
+
+/*聚焦样式状态*/
+.text-entry textarea:focus {
+  outline: none;/*移除默认的轮廓线*/
+  border-color: #5d82ff;
+  box-shadow: 0 0 0 3px rgba(93,130,255,0.18);
+}
+
 @media (max-width: 1080px) {
   .diary {
     grid-template-columns: 1fr;
