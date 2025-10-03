@@ -400,7 +400,7 @@ h3 {
   list-style: none;
   display: grid;
   gap: 1rem;
-  max-height: 80px; /* 与轻声提醒一致的高度，可根据需要调整 */
+  max-height: 100px; /* 与轻声提醒一致的高度，可根据需要调整 */
   overflow-y: auto;
 }
 
@@ -444,7 +444,7 @@ h3 {
   color: #54648d;
   display: grid;
   gap: 0.5rem;
-  max-height: 50px; /* 新增：超过 50px 出现滚动条 */
+  max-height: 100px; /* 新增：超过 50px 出现滚动条 */
   overflow-y: auto;  /* 新增：竖向滚动 */
   padding-right: 4px; /* 为滚动条预留内边距避免遮挡文字 */
 }
