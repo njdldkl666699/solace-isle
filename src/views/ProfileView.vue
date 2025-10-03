@@ -635,13 +635,14 @@ h4 {
   content: "";
   position: absolute;
   left: 4px;
-  top: 4px;
+  top: 50%; /* vertical center */
   width: 20px;
   height: 20px;
   border-radius: 50%;
   background: #fff;
   transition: transform 0.2s ease;
   box-shadow: 0 4px 12px rgba(93, 130, 255, 0.25);
+  transform: translate(0, -50%); /* ensure perfect vertical centering */
 }
 
 .switch input:checked + span {
@@ -649,7 +650,7 @@ h4 {
 }
 
 .switch input:checked + span::after {
-  transform: translateX(24px);
+  transform: translate(24px, -50%); /* keep vertical centering while moving horizontally */
 }
 
 .achievements .grid {
