@@ -178,10 +178,14 @@ onMounted(() => {
 
 .app-shell__header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  /* 改为品牌区宽度自适应，减少其右侧空白 */
+  grid-template-columns: auto 1fr auto; /* 原: minmax(0, 1fr) auto auto */
   align-items: center;
-  gap: 2rem;
-  padding: 1.5rem 3vw;
+  gap: 1rem;
+  padding: 0.85rem 1.6vw; /* 略微减小水平内边距 */
+  max-width: 1280px; /* 限制整体宽度 */
+  width: 100%;
+  margin: 0 auto; /* 居中 */
 }
 
 .app-shell__branding {
@@ -214,6 +218,7 @@ onMounted(() => {
   color: #51607a;
 }
 
+/* 让导航靠左，填充中间可用空间 */
 .app-shell__nav {
   display: flex;
   gap: 0.5rem;
@@ -222,6 +227,7 @@ onMounted(() => {
   padding: 0.25rem;
   box-shadow: 0 8px 24px rgba(83, 113, 170, 0.12);
   backdrop-filter: blur(10px);
+  justify-content: flex-start; /* 确保不被拉伸居中 */
 }
 
 .nav-link {
@@ -280,9 +286,12 @@ onMounted(() => {
   border-top: 1px solid rgba(120, 140, 200, 0.12);
   border-radius: 28px 28px 0 0;
   background: rgba(255, 255, 255, 0.66);
-  padding: 2.5rem 3vw 3rem;
+  padding: 2.2rem 3vw 3rem; /* 略减顶部空白 */
   box-shadow: 0 -12px 24px rgba(95, 132, 255, 0.08);
   backdrop-filter: blur(12px);
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .page-heading {
@@ -331,27 +340,10 @@ onMounted(() => {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
-    gap: 1.5rem;
+    gap: 1.2rem; /* 调整移动端间距 */
+    padding: 1rem 5vw;
   }
-
-  .app-shell__user {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-   .app-shell__user:hover {
-     cursor: pointer;
-   }
-
-  .app-shell__nav {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .page-content {
-    gap: 1.25rem;
-  }
+  .app-shell__main { padding: 1.9rem 6vw 2.5rem; }
 }
 
 @media (max-width: 720px) {
