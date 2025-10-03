@@ -145,7 +145,18 @@ onMounted(() => {
           <img :src="appStore.user.avatar" alt="用户头像" class="avatar" />
           <div>
             <p class="nickname">{{ appStore.user.nickname }}</p>
-            <p class="motto">{{ appStore.user.motto }}</p>
+            <!-- 使用 Tooltip：仅当字数 > 6 时显示截断 + 悬浮弹窗完整文本 -->
+            <el-tooltip
+              v-if="appStore.user.motto && appStore.user.motto.length > 6"
+              :content="appStore.user.motto"
+              placement="bottom"
+              :show-after="120"
+              effect="light"
+              hide-after="0"
+            >
+              <p class="motto is-truncated">{{ appStore.user.motto.slice(0, 6) }}…</p>
+            </el-tooltip>
+            <p v-else class="motto">{{ appStore.user.motto }}</p>
           </div>
         </div>
       </div>
@@ -178,14 +189,14 @@ onMounted(() => {
 
 .app-shell__header {
   display: grid;
-  /* 改为品牌区宽度自适应，减少其右侧空白 */
-  grid-template-columns: auto 1fr auto; /* 原: minmax(0, 1fr) auto auto */
+  /* 三列全部按内容宽度，避免 nav 后面出现大段空白 */
+  grid-template-columns: auto auto auto; /* 原: auto 1fr auto */
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1.6vw; /* 略微减小水平内边距 */
-  max-width: 1280px; /* 限制整体宽度 */
+  gap: 0.9rem; /* 略微再缩小列间距 */
+  padding: 0.8rem 1.6vw;
+  max-width: 1280px;
   width: 100%;
-  margin: 0 auto; /* 居中 */
+  margin: 0 auto;
 }
 
 .app-shell__branding {
@@ -228,6 +239,7 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(83, 113, 170, 0.12);
   backdrop-filter: blur(10px);
   justify-content: flex-start; /* 确保不被拉伸居中 */
+  flex-wrap: nowrap;
 }
 
 .nav-link {
@@ -279,7 +291,15 @@ onMounted(() => {
   margin: 0;
   font-size: 0.8rem;
   color: #5b6a86;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: default;
 }
+.motto.is-truncated {
+  cursor: pointer; /* 提示可悬浮查看 */
+}
+
+/* 移除旧的 span 切换相关样式 */
 
 .app-shell__main {
   flex: 1;
@@ -355,5 +375,11 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* 当屏幕非常宽时，避免 header 过度分散：可选把最大宽度再收窄一点 */
+@media (min-width: 1680px) {
+  .app-shell__header { max-width: 1180px; }
+  .app-shell__main { max-width: 1180px; }
 }
 </style>
