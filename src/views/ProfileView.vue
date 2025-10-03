@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive} from "vue";
+import {computed, onMounted, reactive, watch} from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
@@ -10,9 +10,9 @@ const achievedAchievements = computed(() => appStore.dashboardSummary.Achievemen
 const unachievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => !item.achievedAt));
 
 const settings = reactive({
-  shareAggregated: true,
+  shareAggregated: false,
   nightlyReminder: false,
-  breathingNotification: true,
+  breathingNotification: false,
 });
 
 const getAchievements = async () => {
@@ -29,8 +29,45 @@ const getAchievements = async () => {
   }
 };
 
+const getSettings = async () => {
+  try {
+    const response = await api.get("/user/settings");
+
+    if (response.data.code === 1) {
+      settings.shareAggregated = response.data.data.shareAggregated;
+      settings.nightlyReminder = response.data.data.nightlyReminder;
+      settings.breathingNotification = response.data.data.breathingNotification;
+    } else {
+      ElMessage.error("无法获取习惯设置信息");
+    }
+  } catch {
+    ElMessage.error("无法获取习惯设置信息");
+  }
+}
+
+const updateSettings = async () => {
+  try {
+    const response = await api.put("/user/settings", {
+      shareAggregated: settings.shareAggregated,
+      nightlyReminder: settings.nightlyReminder,
+      breathingNotification: settings.breathingNotification,
+    });
+
+    if (response.data.code !== 1) {
+      ElMessage.error("无法更新习惯设置信息");
+      await getSettings();
+    }
+  } catch {
+    ElMessage.error("无法更新习惯设置信息");
+    await getSettings();
+  }
+}
+
+watch(settings, updateSettings, { deep: true });
+
 onMounted(() => {
   getAchievements();
+  getSettings();
 });
 </script>
 
