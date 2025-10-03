@@ -147,16 +147,16 @@ onMounted(() => {
           <img :src="appStore.user.avatar" alt="用户头像" class="avatar" />
           <div>
             <p class="nickname">{{ appStore.user.nickname }}</p>
-            <!-- 使用 Tooltip：仅当字数 > 6 时显示截断 + 悬浮弹窗完整文本 -->
+            <!-- 截断显示 motto，超过 6 个字符时用省略号，并在悬浮时弹出完整内容 -->
             <el-tooltip
               v-if="appStore.user.motto && appStore.user.motto.length > 6"
               :content="appStore.user.motto"
               placement="bottom"
-              :show-after="120"
               effect="light"
+              :show-after="120"
               hide-after="0"
             >
-              <p class="motto is-truncated">{{ appStore.user.motto.slice(0, 6) }}…</p>
+              <p class="motto motto-ellipsis">{{ appStore.user.motto.slice(0,6) }}…</p>
             </el-tooltip>
             <p v-else class="motto">{{ appStore.user.motto }}</p>
           </div>
@@ -191,14 +191,10 @@ onMounted(() => {
 
 .app-shell__header {
   display: grid;
-  /* 三列全部按内容宽度，避免 nav 后面出现大段空白 */
-  grid-template-columns: auto auto auto; /* 原: auto 1fr auto */
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.9rem; /* 略微再缩小列间距 */
-  padding: 0.8rem 1.6vw;
-  max-width: 1280px;
-  width: 100%;
-  margin: 0 auto;
+  gap: 2rem;
+  padding: 1.5rem 3vw;
 }
 
 .app-shell__branding {
@@ -231,7 +227,6 @@ onMounted(() => {
   color: #51607a;
 }
 
-/* 让导航靠左，填充中间可用空间 */
 .app-shell__nav {
   display: flex;
   gap: 0.5rem;
@@ -240,8 +235,6 @@ onMounted(() => {
   padding: 0.25rem;
   box-shadow: 0 8px 24px rgba(83, 113, 170, 0.12);
   backdrop-filter: blur(10px);
-  justify-content: flex-start; /* 确保不被拉伸居中 */
-  flex-wrap: nowrap;
 }
 
 .nav-link {
@@ -308,12 +301,9 @@ onMounted(() => {
   border-top: 1px solid rgba(120, 140, 200, 0.12);
   border-radius: 28px 28px 0 0;
   background: rgba(255, 255, 255, 0.66);
-  padding: 2.2rem 3vw 3rem; /* 略减顶部空白 */
+  padding: 2.5rem 3vw 3rem;
   box-shadow: 0 -12px 24px rgba(95, 132, 255, 0.08);
   backdrop-filter: blur(12px);
-  max-width: 1280px;
-  width: 100%;
-  margin: 0 auto;
 }
 
 .page-heading {
@@ -362,10 +352,27 @@ onMounted(() => {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
-    gap: 1.2rem; /* 调整移动端间距 */
-    padding: 1rem 5vw;
+    gap: 1.5rem;
   }
-  .app-shell__main { padding: 1.9rem 6vw 2.5rem; }
+
+  .app-shell__user {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+   .app-shell__user:hover {
+     cursor: pointer;
+   }
+
+  .app-shell__nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-content {
+    gap: 1.25rem;
+  }
 }
 
 @media (max-width: 720px) {
@@ -377,11 +384,5 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
-}
-
-/* 当屏幕非常宽时，避免 header 过度分散：可选把最大宽度再收窄一点 */
-@media (min-width: 1680px) {
-  .app-shell__header { max-width: 1180px; }
-  .app-shell__main { max-width: 1180px; }
 }
 </style>
