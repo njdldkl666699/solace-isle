@@ -404,18 +404,18 @@ const closeDayEntry = () => {
         </div>
         <div v-if="historyView === 'list'" class="entry-list">
           <article v-for="entry in entries" :key="entry.date" class="entry-card">
-            <header>
+            <header class="entry-header">
               <span class="emoji">{{ entry.moodEmoji }}</span>
-              <div>
+              <div class="meta-row">
                 <p class="date">{{ entry.date }}</p>
                 <p class="label">{{ entry.moodLabel }}</p>
-                <img v-if="entry.image" :src="entry.image" alt="图片不见了"/>
               </div>
               <div class="tags">
                 <span v-for="tag in entry.tags" :key="tag">#{{ tag }}</span>
               </div>
             </header>
             <p>{{ entry.content }}</p>
+            <img v-if="entry.image" :src="entry.image" alt="图片不见了" class="entry-image" />
           </article>
         </div>
         <div v-else class="calendar-view">
@@ -524,7 +524,7 @@ const closeDayEntry = () => {
   line-height: 1.5;
   font: inherit;
   background: rgba(255,255,255,0.92);
-  border: 1px solid rgba(93,130,255,0.28);
+  border: 1px solid rgba(93, 130, 255, 0.28);
   border-radius: 18px;
   color: #2f3a60;
   overflow: auto;
@@ -744,22 +744,51 @@ const closeDayEntry = () => {
   gap: 0.9rem;
 }
 
-.entry-card header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.entry-card header.entry-header { /* 让 emoji 固定左上，其余内容在右侧 */
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* emoji | meta | tags */
+  align-items: start;
+  column-gap: 1rem;
+  row-gap: .35rem;
+  padding: 0; /* 保持紧凑 */
 }
-
-.entry-card header img {
+.entry-card header.entry-header .emoji {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 1.9rem;
+  line-height: 1;
+  align-self: start; /* 顶部对齐 */
+}
+.entry-card header.entry-header .meta-row {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  align-items: baseline;
+  min-width: 0;
+}
+.entry-card header.entry-header .tags {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  justify-content: flex-end;
+}
+/* 移除旧 header 内部图片，改为 header 下单独一行 */
+.entry-card header img { display: none; }
+.entry-card > img.entry-image {
+  /* 居中显示：左右 auto */
+  margin: .1rem auto 0; /* 顶部 0.1rem，水平居中 */
   display: block;
-  max-width: 360px;          /* 最大宽度 */
-  max-height: 400px;         /* 最大高度 */
-  width: auto;               /* 保持比例 */
-  height: auto;              /* 保持比例 */
-  border-radius: 14px;       /* 圆角与整体风格统一 */
-  object-fit: contain;       /* 完整显示整张图片，不裁剪 */
-  background: #f2f5fa;       /* 若有空白，给一个柔和底色 */
-  margin-top: .4rem;
+  max-width: 500px;
+  max-height: 500px;
+  width: auto;
+  height: auto;
+  border-radius: 14px;
+  object-fit: contain;
+  background: #f2f5fa;
   box-shadow: 0 4px 12px rgba(93,130,255,0.12);
 }
 
@@ -904,7 +933,6 @@ const closeDayEntry = () => {
 .manage-btn {
   border: 1px solid rgba(93,130,255,0.35);
   background: rgba(255,255,255,0.7);
-  color: #4a5d8a;
   padding: 0.35rem 0.8rem;
   border-radius: 12px;
   cursor: pointer;
