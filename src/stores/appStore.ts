@@ -72,11 +72,12 @@ export type CbtScenario = {
 };
 
 export type TreeholePost = {
-  id: string;
-  content: string;
-  createdAt: string;
-  moodEmoji: string;
-  warms: number;
+  id: number;
+  text: string;
+  datetime: string;
+  emoji: string;
+  like: number;
+  liked: boolean;
 };
 
 export type User = {
@@ -315,18 +316,20 @@ export const useAppStore = defineStore("app", {
     treehole: {
       posts: [
         {
-          id: "post-1",
-          content: "今天一个人去操场跑步，风很凉。我开始愿意慢下来，倾听自己的心跳。",
-          createdAt: "2025-09-29T23:20:00+08:00",
-          moodEmoji: "🌙",
-          warms: 27,
+          id: 1,
+          text: "今天一个人去操场跑步，风很凉。我开始愿意慢下来，倾听自己的心跳。",
+          datetime: "2025-09-29T23:20:00+08:00",
+          emoji: "🌙",
+          like: 27,
+          liked: false,
         },
         {
-          id: "post-2",
-          content: "第一次在小组里大声表达不同意见，虽然声音有些发抖，但朋友们都认真听了。",
-          createdAt: "2025-09-28T18:45:00+08:00",
-          moodEmoji: "💬",
-          warms: 42,
+          id: 2,
+          text: "第一次在小组里大声表达不同意见，虽然声音有些发抖，但朋友们都认真听了。",
+          datetime: "2025-09-28T18:45:00+08:00",
+          emoji: "💬",
+          like: 42,
+          liked: true,
         },
       ] satisfies TreeholePost[],
     },
