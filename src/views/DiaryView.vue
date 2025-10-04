@@ -6,6 +6,14 @@ import api from "../api/request.ts";
 import { ElMessage } from "element-plus";
 import type { DiaryEntry } from "../stores/appStore";
 
+// 新增：本地日期格式化函数，避免使用 toISOString 产生的时区偏移
+const formatLocalDate = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 type HistoryView = "list" | "calendar";
 
 const appStore = useAppStore();
@@ -27,8 +35,8 @@ const draft = reactive({
 
 const entries = computed(() => appStore.diary.entries);
 
-const currentDate = computed(() => new Date().toISOString().slice(0, 10));
-const activeMonth = ref(new Date(currentDate.value));
+// 使用本地当前时间避免解析 YYYY-MM-DD 触发 UTC 偏移
+const activeMonth = ref(new Date());
 
 const calendarMap = computed(() => appStore.diary.entries);
 
@@ -41,24 +49,24 @@ const monthInfo = computed(() => {
   const days = [] as { date: Date; inMonth: boolean; key: string }[];
   for (let i = 1; i < firstDayWeek; i++) {
     const date = new Date(year, month, 1 - (firstDayWeek - i));
-    days.push({ date, inMonth: false, key: date.toISOString() });
+    days.push({ date, inMonth: false, key: formatLocalDate(date) });
   }
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-    days.push({ date, inMonth: true, key: date.toISOString() });
+    days.push({ date, inMonth: true, key: formatLocalDate(date) });
   }
   const remainder = days.length % 7;
   if (remainder) {
     for (let i = 1; i <= 7 - remainder; i++) {
       const date = new Date(year, month + 1, i);
-      days.push({ date, inMonth: false, key: date.toISOString() });
+      days.push({ date, inMonth: false, key: formatLocalDate(date) });
     }
   }
   return { year, month, label: `${year}年${month + 1}月`, days };
 });
 
 const moodForDate = (date: Date) => {
-  const key = date.toISOString().slice(0, 10);
+  const key = formatLocalDate(date);
   return calendarMap.value.find((entry) => entry.date === key)?.moodEmoji || "";
 };
 
@@ -216,6 +224,8 @@ const getEntries = async () => {
   }
 }
 
+watch(activeMonth,() => getEntries());
+
 onMounted(() => {
   getEntries();
 });
@@ -305,7 +315,7 @@ const dayEntryDialogVisible = ref(false);
 const dayEntry = ref<DiaryEntry | null>(null);
 
 const openDayEntry = (date: Date) => {
-  const key = date.toISOString().slice(0, 10);
+  const key = formatLocalDate(date);
   const entry = entries.value.find(e => e.date === key) || null;
   if (entry) {
     dayEntry.value = entry;
