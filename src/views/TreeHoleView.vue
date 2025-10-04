@@ -119,7 +119,7 @@ onMounted(fetchPosts);
         <div class="emoji-inline-row">
           <div class="current-emoji" :class="{ empty: !selectedEmoji }" @click="openQuickEmojiDialog" title="点击快速选择">
             <span v-if="selectedEmoji">{{ selectedEmoji }}</span>
-            <span v-else>🙂</span>
+            <span class="show-emoji" v-else>🙂</span>
           </div>
           <input v-model="manualEmoji" class="emoji-input" placeholder="输入表情" maxlength="4" />
           <button v-if="selectedEmoji" type="button" class="clear-btn" @click="() => { selectedEmoji=''; manualEmoji=''; }">清除</button>
@@ -207,11 +207,52 @@ onMounted(fetchPosts);
 .current-emoji:hover { background:#f4f7ff; box-shadow:0 6px 16px rgba(93,130,255,.18); }
 .emoji-input { width:120px; text-align:center; font-size:1.1rem; padding:.55rem .6rem; border:1px solid rgba(93,130,255,.35); border-radius:14px; background:#fff; }
 .emoji-input:focus { outline:none; border-color:#5d82ff; box-shadow:0 0 0 3px rgba(93,130,255,.18); }
+.show-emoji{font-size: 1.7rem;}
 .quick-btn, .clear-btn { border:1px solid rgba(93,130,255,.4); background:rgba(255,255,255,.85); color:#4a5d8a; padding:.5rem 1rem; font-size:.75rem; font-weight:600; border-radius:14px; cursor:pointer; transition:background .2s, box-shadow .2s; }
 .quick-btn:hover, .clear-btn:hover { background:#fff; box-shadow:0 4px 12px rgba(93,130,255,.2); }
 .clear-btn { border-color:rgba(255,90,111,.45); color:#ff5a6f; }
 .clear-btn:hover { background:#fff5f7; }
-.emoji-hint { margin:0; font-size:.65rem; color:#6b7aa6; }
+.emoji-hint { margin:0; font-size:.8rem; color:#6b7aa6; }
+
+.publish-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(93,130,255,.28);
+  border-radius: 18px; /* 圆角 */
+  background: rgba(255,255,255,0.95);
+  padding: 0.85rem 1rem;
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical; /* 仅允许竖向拉伸 */
+  color: #2f3a60;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.publish-panel textarea:focus {
+  outline: none;
+  border-color: #5d82ff;
+  box-shadow: 0 0 0 3px rgba(93,130,255,.18);
+  background: #fff;
+}
+.publish-panel textarea::placeholder { color:#8fa0c3; }
+
+.actions { display:flex; justify-content:flex-end; margin-top:.5rem; }
+.actions .submit {
+  background: linear-gradient(135deg,#5d82ff,#8fa3ff);
+  border: none;
+  border-radius: 20px;
+  padding: .65rem 1.4rem;
+  font-weight: 600;
+  font-size: .85rem;
+  letter-spacing: .5px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(93,130,255,.22);
+  transition: background .25s ease, transform .18s ease, box-shadow .25s ease;
+}
+.actions .submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow:0 12px 28px rgba(93,130,255,.28); }
+.actions .submit:active:not(:disabled) { transform: translateY(-1px); }
+.actions .submit:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
+.actions .submit:focus-visible { outline:2px solid #fff; outline-offset:2px; box-shadow:0 0 0 3px rgba(93,130,255,.55); }
 
 .quick-emoji-dialog :deep(.el-dialog__body){ padding: .6rem 1.1rem 1.2rem; }
 .emoji-dialog-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); gap:.55rem; }
@@ -222,7 +263,7 @@ onMounted(fetchPosts);
 /* 移除原直接展示的 emoji-select-block 样式保留其他部分 */
 .emoji-select-block, .emoji-grid { display:none; }
 
-.posts { background: rgba(255, 255, 255, 0.9); border-radius: 24px; padding: 2rem 2.2rem; border: 1px solid rgba(93, 130, 255, 0.12); box-shadow: 0 18px 32px rgba(93, 120, 190, 0.12); display: grid; gap: 1.5rem; }
+.posts { background: rgba(255, 255, 255, 0.9); border-radius: 24px; padding: 2rem 2.2rem; border: 1px solid rgba(93, 130, 255, 0.12); box-shadow: 0 18px 32px rgba(93,120,190, 0.12); display: grid; gap: 1.5rem; }
 .list-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .list-header h4 { margin:0; font-size:1.25rem; color:#253257; }
 .order-switch { display:inline-flex; background:rgba(93,130,255,.1); padding:.3rem; border-radius:999px; gap:.3rem; }
