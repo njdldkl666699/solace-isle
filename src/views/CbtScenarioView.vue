@@ -153,6 +153,129 @@ const restart = () => {
   stepIndex.value = 0;
   isCompleted.value = false;
   Object.keys(responses).forEach((key) => delete responses[key]);
+  // 若已定义则清空流状态
+  if (typeof resetStreamState === 'function') {
+    // @ts-ignore - runtime check
+    resetStreamState();
+  }
+};
+
+// 新增：提交与流式分析状态
+interface CbtAnswer {
+  options?: string[];
+  text?: string;
+  evidence?: { support: string; against: string };
+}
+
+const isSubmitting = ref(false);
+const isStreamFinished = ref(false);
+const streamAnswer = ref("");
+const streamError = ref("");
+const taskId = ref<string | null>(null);
+
+// 将响应转换为后端需要的结构
+const buildAnswerPayload = (): CbtAnswer[] => {
+  if (!scenario.value) return [];
+  return scenario.value.steps.map((step) => {
+    const raw = responses[step.id];
+    const answer: CbtAnswer = {};
+    if (step.type === "single-select") {
+      if (typeof raw === "string") answer.options = [raw];
+    } else if (step.type === "long-text") {
+      if (typeof raw === "string") answer.text = raw;
+    } else if (step.type === "evidence") {
+      if (raw && typeof raw === "object") {
+        const { support = "", against = "" } = raw as { support?: string; against?: string };
+        answer.evidence = { support, against };
+      }
+    }
+    return answer;
+  });
+};
+
+const resetStreamState = () => {
+  isSubmitting.value = false;
+  isStreamFinished.value = false;
+  streamAnswer.value = "";
+  streamError.value = "";
+  taskId.value = null;
+};
+
+const submitScenario = async () => {
+  if (!scenario.value) return;
+  if (isSubmitting.value) return;
+  resetStreamState();
+  isSubmitting.value = true;
+  const payload = buildAnswerPayload();
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/cbt/${scenario.value.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(token ? { Authentication: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok || !res.body) {
+      ElMessage.error("提交失败，无法建立流连接");
+      isSubmitting.value = false;
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sepIndex: number;
+      while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
+        const rawChunk = buffer.slice(0, sepIndex).trim();
+        buffer = buffer.slice(sepIndex + 2);
+        if (!rawChunk) continue;
+        // 处理可能的多行（保守做法：逐行找 data: 开头）
+        const lines = rawChunk.split(/\n+/).filter((l) => l.startsWith("data:"));
+        for (const line of lines) {
+          const jsonStr = line.slice(5).trim();
+            if (!jsonStr) continue;
+            try {
+              const evt = JSON.parse(jsonStr);
+              if (evt.event === "ping") {
+                continue; // 心跳
+              }
+              if (evt.taskId && !taskId.value) taskId.value = evt.taskId;
+              if (evt.event === "message") {
+                if (typeof evt.answer === "string") {
+                  streamAnswer.value += evt.answer;
+                }
+              } else if (evt.event === "messageEnd") {
+                isStreamFinished.value = true;
+                isSubmitting.value = false;
+              } else if (evt.event === "error") {
+                streamError.value = evt.message || "分析出错";
+                ElMessage.error(streamError.value);
+                isStreamFinished.value = true;
+                isSubmitting.value = false;
+              }
+            } catch (e) {
+              console.error("解析流数据失败", e, jsonStr);
+            }
+        }
+      }
+    }
+    // 结束但未收到 messageEnd，也认为结束
+    if (!isStreamFinished.value) {
+      isStreamFinished.value = true;
+      isSubmitting.value = false;
+    }
+  } catch (e) {
+    console.error(e);
+    streamError.value = "提交或分析过程中出现异常";
+    ElMessage.error(streamError.value);
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -241,8 +364,31 @@ const restart = () => {
             <pre>{{ item.content }}</pre>
           </li>
         </ul>
+        <div class="analysis" v-if="streamAnswer || streamError || isSubmitting">
+          <h4>AI 分析</h4>
+          <div class="analysis-box" :class="{ loading: isSubmitting }">
+            <template v-if="streamError">
+              <span class="error">{{ streamError }}</span>
+            </template>
+            <template v-else>
+              <pre class="analysis-content">{{ streamAnswer || (isSubmitting ? '分析生成中…' : '尚未获取分析') }}</pre>
+            </template>
+          </div>
+        </div>
         <div class="summary-actions">
           <button type="button" class="ghost" @click="restart">重新练习</button>
+          <button
+            v-if="!streamAnswer && !isSubmitting"
+            type="button"
+            class="primary"
+            @click="submitScenario"
+          >提交并获取 AI 分析</button>
+          <button
+            v-else-if="isSubmitting"
+            disabled
+            type="button"
+            class="primary"
+          >分析中…</button>
           <RouterLink class="primary-link" to="/cbt">返回训练列表</RouterLink>
         </div>
       </section>
@@ -461,4 +607,34 @@ const restart = () => {
     flex-direction: column;
   }
 }
+
+.analysis {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.analysis h4 { margin: 0; font-size: 1.1rem; color: #253257; }
+.analysis-box {
+  background: rgba(246,249,255,0.9);
+  border: 1px solid rgba(93,130,255,0.16);
+  border-radius: 16px;
+  padding: 1rem 1.2rem;
+  position: relative;
+  min-height: 80px;
+  white-space: pre-wrap;
+}
+.analysis-box.loading::after {
+  content: ' ';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, rgba(93,130,255,0.08), rgba(93,130,255,0.08) 10px, rgba(93,130,255,0.14) 10px, rgba(93,130,255,0.14) 20px);
+  animation: pulse 1.2s linear infinite;
+  mix-blend-mode: multiply;
+  opacity: 0.35;
+  border-radius: inherit;
+  pointer-events: none;
+}
+@keyframes pulse { to { background-position: 40px 0; } }
+.analysis-content { margin: 0; font-family: inherit; color: #4a5d8a; }
+.error { color: #d93030; font-weight: 600; }
 </style>
