@@ -1,15 +1,74 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import AppShell from "../components/layout/AppShell.vue";
-import { useAppStore } from "../stores/appStore";
+import {type CbtScenarioStep, type Evidence, useAppStore} from "../stores/appStore";
+import api from "../api/request.ts";
+import { ElMessage } from "element-plus";
 
 const props = defineProps<{ id: string }>();
 
 const appStore = useAppStore();
 const router = useRouter();
 
-const scenario = computed(() => appStore.getScenario(props.id));
+// 获取步骤
+const getSteps = async () => {
+  try {
+    const response = await api.get(`/cbt/${props.id}`);
+    if (response.data.code === 1) {
+      return response.data.data as CbtScenarioStep[];
+    } else {
+      ElMessage.error("无法获取 CBT 训练舱步骤");
+      return [] as CbtScenarioStep[];
+    }
+  } catch (err: any) {
+    ElMessage.error("无法获取 CBT 训练舱步骤");
+    return [] as CbtScenarioStep[];
+  }
+};
+
+// 兜底：当直接进入详情页（刷新或外部链接）且 store 里没有场景列表时，拉取列表
+const getCbtList = async () => {
+  try {
+    const response = await api.get("/cbt");
+    if (response.data.code === 1) {
+      appStore.setCbtScenarios(response.data.data);
+    } else {
+      ElMessage.error("无法获取 CBT 训练舱列表");
+    }
+  } catch (_) {
+    ElMessage.error("无法获取 CBT 训练舱列表");
+  }
+};
+
+// 保存步骤
+const steps = ref<CbtScenarioStep[]>([]);
+
+onMounted(async () => {
+  // 确保基础场景数据存在
+  if (!appStore.getScenario(props.id)) {
+    await getCbtList();
+  }
+  // 获取步骤
+  steps.value = await getSteps();
+});
+
+// 组合：包含 CbtScenario 所有字段 + steps
+const scenario = computed(() => {
+  const base = appStore.getScenario(props.id);
+  if (!base) return null;
+  return {
+    id: base.id,
+    title: base.title,
+    description: base.description,
+    difficulty: base.difficulty,
+    durationLabel: base.durationLabel,
+    coverColor: base.coverColor,
+    tags: base.tags,
+    finished: base.finished,
+    steps: steps.value,
+  } as (typeof base & { steps: CbtScenarioStep[] });
+});
 const stepIndex = ref(0);
 const isCompleted = ref(false);
 
@@ -29,6 +88,11 @@ const longTextPlaceholder = computed(() => {
     return "写下你的想法…";
   }
   return "写下你的想法…";
+});
+
+const singleSelectOptions = computed<string[]>(() => {
+  if (currentStep.value?.type !== 'single-select') return [];
+  return currentStep.value.options;
 });
 
 const getSummary = computed(() => {
@@ -116,14 +180,14 @@ const restart = () => {
 
         <div v-if="currentStep.type === 'single-select'" class="option-grid">
           <button
-            v-for="option in currentStep.options"
-            :key="option.value"
+            v-for="option in singleSelectOptions"
+            :key="option"
             type="button"
             class="option"
-            :class="{ active: responses[currentStep.id] === option.value }"
-            @click="handleSelect(option.value)"
+            :class="{ active: responses[currentStep.id] === option }"
+            @click="handleSelect(option)"
           >
-            {{ option.label }}
+            {{ option }}
           </button>
         </div>
 
@@ -143,7 +207,7 @@ const restart = () => {
               <textarea
                 :placeholder="currentStep.placeholders.support"
                 rows="4"
-                :value="((responses[currentStep.id] as { support: string; against: string })?.support) ?? ''"
+                :value="((responses[currentStep.id] as Evidence)?.support) ?? ''"
                 @input="handleEvidenceUpdate('support', ($event.target as HTMLTextAreaElement).value)"
               />
             </label>
@@ -154,7 +218,7 @@ const restart = () => {
               <textarea
                 :placeholder="currentStep.placeholders.against"
                 rows="4"
-                :value="((responses[currentStep.id] as { support: string; against: string })?.against) ?? ''"
+                :value="((responses[currentStep.id] as Evidence)?.against) ?? ''"
                 @input="handleEvidenceUpdate('against', ($event.target as HTMLTextAreaElement).value)"
               />
             </label>

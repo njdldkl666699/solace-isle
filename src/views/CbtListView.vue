@@ -2,9 +2,29 @@
 import { computed } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
-const scenarios = computed(() => appStore.cbt.scenarios);
+const scenarios = computed(() => {
+  if (appStore.cbt.scenarios.length === 0) {
+    getCbtList();
+  }
+  return appStore.cbt.scenarios;
+});
+
+const getCbtList = async () => {
+  try {
+    const response = await api.get("/cbt");
+    if(response.data.code === 1){
+      appStore.setCbtScenarios(response.data.data);
+    }else {
+      ElMessage.error("无法获取 CBT 训练舱列表");
+    }
+  } catch (err: any){
+    ElMessage.error("无法获取 CBT 训练舱列表");
+  }
+};
 </script>
 
 <template>

@@ -37,13 +37,18 @@ export type ChatSession = {
   messages: ChatMessage[];
 };
 
+export type Evidence = {
+    support: string;
+    against: string;
+}
+
 export type CbtScenarioStep =
   | {
       id: string;
       type: "single-select";
       title: string;
       prompt: string;
-      options: { label: string; value: string }[];
+      options: string[];
     }
   | {
       id: string;
@@ -57,7 +62,7 @@ export type CbtScenarioStep =
       type: "evidence";
       title: string;
       prompt: string;
-      placeholders: { support: string; against: string };
+      placeholders: Evidence;
     };
 
 export type CbtScenario = {
@@ -68,7 +73,7 @@ export type CbtScenario = {
   durationLabel: string;
   coverColor: string;
   tags: string[];
-  steps: CbtScenarioStep[];
+  finished?: boolean;
 };
 
 export type TreeholePost = {
@@ -196,142 +201,10 @@ export const useAppStore = defineStore("app", {
       quickPrompts: ["我有点睡不着，可以陪我聊聊吗？", "帮我整理一下今天的情绪亮点。", "我担心自己的表现不够好。"],
     },
     cbt: {
-      scenarios: [
-        {
-          id: "exam-anxiety",
-          title: "演讲前的自信补给",
-          description: "识别紧张背后的自动化思维，用证据让自己站稳。",
-          difficulty: 2,
-          durationLabel: "约 6 分钟",
-          coverColor: "#b5c9ff",
-          tags: ["认知重构", "现场应对"],
-          steps: [
-            {
-              id: "step-1",
-              type: "single-select",
-              title: "识别情绪",
-              prompt: "此刻你的心情最贴近以下哪一种？",
-              options: [
-                { label: "紧张", value: "紧张" },
-                { label: "担心被评价", value: "担心被评价" },
-                { label: "兴奋但心跳加速", value: "兴奋但心跳加速" },
-              ],
-            },
-            {
-              id: "step-2",
-              type: "long-text",
-              title: "捕捉想法",
-              prompt: "刚刚脑海里闪过的自动化想法是什么？大胆写下它。",
-              placeholder: "例如：“我一定会讲砸”、“他们会发现我准备不足”…",
-            },
-            {
-              id: "step-3",
-              type: "evidence",
-              title: "寻找证据",
-              prompt: "分别列出支持和反驳这个想法的证据。",
-              placeholders: {
-                support: "支持它的证据…",
-                against: "反驳它的证据…",
-              },
-            },
-            {
-              id: "step-4",
-              type: "long-text",
-              title: "生成新的平衡想法",
-              prompt: "结合上一步的证据，给自己写一句更平衡的鼓励话语，帮助你面对演讲。",
-              placeholder: "例如：“我准备充分，即使被问到不会的也可以诚实回答”…",
-            },
-          ] satisfies CbtScenarioStep[],
-        },
-        {
-          id: "teamwork-frustration",
-          title: "小组协作里的挫败调频",
-          description: "当你感觉被忽视或贡献不被看见时，学会重新表达需求。",
-          difficulty: 3,
-          durationLabel: "约 8 分钟",
-          coverColor: "#ffd6a5",
-          tags: ["沟通技巧", "情绪表达"],
-          steps: [
-            {
-              id: "step-1",
-              type: "single-select",
-              title: "描述场景",
-              prompt: "这次让你感到挫败的情境属于？",
-              options: [
-                { label: "想法被忽视", value: "想法被忽视" },
-                { label: "贡献不平衡", value: "贡献不平衡" },
-                { label: "反馈过于严厉", value: "反馈过于严厉" },
-              ],
-            },
-            {
-              id: "step-2",
-              type: "long-text",
-              title: "表达真实需要",
-              prompt: "如果对方能听到，你希望他们了解什么？",
-            },
-            {
-              id: "step-3",
-              type: "long-text",
-              title: "练习回应",
-              prompt: "试着写下你愿意对队友说的话，从“我感到…”开始。",
-            },
-          ] satisfies CbtScenarioStep[],
-        },
-        {
-          id: "night-calm",
-          title: "夜晚安心入睡指南",
-          description: "将纷乱的思绪分类安放，为自己准备一段温柔的睡前仪式。",
-          difficulty: 1,
-          durationLabel: "约 4 分钟",
-          coverColor: "#c5f1d4",
-          tags: ["睡眠", "自我关怀"],
-          steps: [
-            {
-              id: "step-1",
-              type: "long-text",
-              title: "写下脑海里的想法",
-              prompt: "把此刻让你睡不着的念头写下来。",
-            },
-            {
-              id: "step-2",
-              type: "single-select",
-              title: "给它贴个标签",
-              prompt: "这些想法更像是：",
-              options: [
-                { label: "担忧", value: "担忧" },
-                { label: "待办事项", value: "待办事项" },
-                { label: "期待", value: "期待" },
-              ],
-            },
-            {
-              id: "step-3",
-              type: "long-text",
-              title: "安心仪式",
-              prompt: "给自己写下今晚的安心仪式或一句安稳的话。",
-            },
-          ] satisfies CbtScenarioStep[],
-        },
-      ] satisfies CbtScenario[],
+      scenarios: [] as CbtScenario[],
     },
     treehole: {
-      posts: [
-        {
-          id: 1,
-          text: "今天一个人去操场跑步，风很凉。我开始愿意慢下来，倾听自己的心跳。",
-          datetime: "2025-09-29T23:20:00+08:00",
-          emoji: "🌙",
-          like: 27,
-          liked: false,
-        },
-        {
-          id: 2,
-          text: "第一次在小组里大声表达不同意见，虽然声音有些发抖，但朋友们都认真听了。",
-          datetime: "2025-09-28T18:45:00+08:00",
-          emoji: "💬",
-          like: 42,
-          liked: true,
-        },
-      ] satisfies TreeholePost[],
+      posts: [] as TreeholePost[],
     },
   }},
   getters: {
@@ -339,7 +212,7 @@ export const useAppStore = defineStore("app", {
       return state.chat.sessions.find((session) => session.id === state.chat.activeSessionId);
     },
     getScenario: (state) => (id: string) => {
-      return state.cbt.scenarios.find((scenario) => scenario.id === id);
+      return state.cbt.scenarios.find((scenario) => scenario.id == id);
     },
   },
   actions: {
@@ -377,6 +250,9 @@ export const useAppStore = defineStore("app", {
     },
     updateEntries(entries: DiaryEntry[]){
       this.diary.entries = entries;
+    },
+    setCbtScenarios(scenarios: CbtScenario[]){
+      this.cbt.scenarios = scenarios;
     },
     calcGreeting(){
       const h = new Date().getHours();
@@ -434,7 +310,6 @@ export const useAppStore = defineStore("app", {
         }
       } catch(_) { /* ignore */ }
     },
-    // 兼容旧数据迁移：若存在旧 key 则合并一次
     migrateOldCustomQuickEmojis(){
       try {
         if (typeof localStorage === 'undefined') return;
