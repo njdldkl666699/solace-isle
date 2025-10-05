@@ -91,7 +91,7 @@ onMounted(() => {
           <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="usePrompt(prompt)">
             {{ prompt }}
           </button>
-          <button @click="getQuickPrompts">换一批🔎</button>
+          <button class="refresh-btn" @click="getQuickPrompts">换一批🔎</button>
         </div>
       </aside>
 
@@ -209,9 +209,44 @@ onMounted(() => {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.prompt-box button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 22px rgba(93, 130, 255, 0.18);
+.prompt-box .refresh-btn {
+  height: 40px;
+  width: 120px; /* 更窄 */
+  justify-self: start;
+  background: linear-gradient(135deg, #4d75ff, #6f8dff);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 18px rgba(93, 130, 255, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+
+.prompt-box .refresh-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 50%;
+  height: 100%;
+  background: rgba(255,255,255,0.35);
+  transform: skewX(-25deg);
+  transition: left 0.5s ease;
+}
+
+.prompt-box .refresh-btn:hover::after {
+  left: 120%;
+}
+
+.prompt-box .refresh-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 24px rgba(93, 130, 255, 0.38);
+}
+
+.prompt-box .refresh-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 14px rgba(93, 130, 255, 0.28);
 }
 
 .conversation {
