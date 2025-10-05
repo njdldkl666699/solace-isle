@@ -24,6 +24,7 @@ export type DiaryEntry = {
 };
 
 export type ChatMessage = {
+  id: string; // 唯一标识（与成对消息的原始 id 相同，user/ai 共用）
   role: "user" | "ai";
   content: string;
   createdAt: string;

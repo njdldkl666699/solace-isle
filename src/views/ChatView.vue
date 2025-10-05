@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch, onBeforeUnmount } from "vue";
+import { computed, nextTick, onMounted, ref, onBeforeUnmount } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { type ChatList, type ChatMessage, type ChatSession, useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
@@ -9,11 +9,16 @@ const appStore = useAppStore();
 const session = ref<ChatSession>();
 const chatList = ref<ChatList[]>([]);
 
-// 新增：分页 / 无限滚动相关状态
-const hasMoreSessions = ref(true); // 后端标识是否还有更多
-const isLoadingSessions = ref(false); // 当前是否在加载
-const sessionListContainer = ref<HTMLUListElement | null>(null); // 列表滚动容器引用
-const pageLimit = 20; // 每次请求条数（可按需调整）
+// 会话列表分页
+const hasMoreSessions = ref(true);
+const isLoadingSessions = ref(false);
+const sessionListContainer = ref<HTMLUListElement | null>(null);
+const pageLimit = 20;
+
+// 消息分页（向上加载更早的）
+const isLoadingMessages = ref(false);
+const hasMoreMessages = ref(true);
+const messageLimit = 20;
 
 const draft = ref("");
 const isTyping = ref(false);
@@ -21,21 +26,7 @@ const messageContainer = ref<HTMLDivElement | null>(null);
 
 const quickPrompts = computed(() => appStore.chat.quickPrompts);
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-    }
-  });
-};
-
-const addUserMessage = (content: string, date: string) => {
-  if (!session.value) return;
-  const newMessage: ChatMessage = { role: "user", content, createdAt: date };
-  session.value.messages.push(newMessage);
-};
-
-// 加载会话列表（初次/分页）
+/* ---------------- 会话列表相关 ---------------- */
 const loadSessions = async (initial = false) => {
   if (isLoadingSessions.value) return;
   if (!hasMoreSessions.value && !initial) return;
@@ -43,17 +34,12 @@ const loadSessions = async (initial = false) => {
   try {
     const lastItem = !initial && chatList.value.length ? chatList.value[chatList.value.length - 1] : null;
     const params: Record<string, any> = { limit: pageLimit };
-    if (lastItem) params.lastId = lastItem.id; // 仅分页时携带 lastId
-
+    if (lastItem) params.lastId = lastItem.id;
     const response = await api.get("/chat/sessions/list", { params });
     if (response.data?.code === 1) {
       const data = response.data.data || {};
       const list: any[] = data.sessions || [];
-      const mapped: ChatList[] = list.map(s => ({
-        id: s.id,
-        title: s.title,
-        updatedAt: s.datetime || s.updatedAt || new Date().toISOString(),
-      }));
+      const mapped: ChatList[] = list.map(s => ({ id: s.id, title: s.title, updatedAt: s.datetime || s.updatedAt || new Date().toISOString() }));
       if (initial) {
         chatList.value = mapped;
       } else {
@@ -71,14 +57,110 @@ const loadSessions = async (initial = false) => {
   }
 };
 
-// 滚动到底部触发加载更多
 const handleSessionScroll = () => {
   const el = sessionListContainer.value;
   if (!el || isLoadingSessions.value || !hasMoreSessions.value) return;
   const distanceToBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
-  if (distanceToBottom < 40) {
-    loadSessions();
+  if (distanceToBottom < 40) loadSessions();
+};
+
+/* ---------------- 消息相关 ---------------- */
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }
+  });
+};
+
+// 将 API 返回的成对消息拆分
+const splitPairs = (pairs: any[]): ChatMessage[] => {
+  const result: ChatMessage[] = [];
+  for (const p of pairs) {
+    if (!p) continue;
+    const baseId = p.id || genLocalMsgId();
+    const time = p.datetime || new Date().toISOString();
+    if (p.query) result.push({ id: baseId, role: "user", content: p.query, createdAt: time });
+    if (p.answer) result.push({ id: baseId, role: "ai", content: p.answer, createdAt: time });
   }
+  // 按时间升序展示
+  return result.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+};
+
+// 初次加载或切换会话：获取最新消息
+const fetchLatestMessages = async (sessionId: string) => {
+  if (isLoadingMessages.value) return;
+  isLoadingMessages.value = true;
+  hasMoreMessages.value = true; // 重置
+  try {
+    const resp = await api.get(`/chat/sessions/${sessionId}`, { params: { limit: messageLimit } });
+    if (resp.data?.code === 1) {
+      const data = resp.data.data || {};
+      const pairs: any[] = data.messages || [];
+      const msgs = splitPairs(pairs);
+      if (!session.value) return;
+      session.value.messages = msgs; // 覆盖
+      hasMoreMessages.value = !!data.hasMore;
+      scrollToBottom();
+    } else {
+      ElMessage.error("加载消息失败");
+    }
+  } catch (_) {
+    ElMessage.error("加载消息出错");
+  } finally {
+    isLoadingMessages.value = false;
+  }
+};
+
+// 向上滚动时加载更早消息
+const loadOlderMessages = async () => {
+  if (!session.value || isLoadingMessages.value || !hasMoreMessages.value) return;
+  if (!session.value.messages.length) return; // 没有消息不用加载
+  isLoadingMessages.value = true;
+  const firstId = session.value.messages[0]?.id; // 当前第一条（最早显示）对应的成对 id
+  const prevScrollHeight = messageContainer.value?.scrollHeight || 0;
+  try {
+    const resp = await api.get(`/chat/sessions/${session.value.id}`, { params: { firstId, limit: messageLimit } });
+    if (resp.data?.code === 1) {
+      const data = resp.data.data || {};
+      const pairs: any[] = data.messages || [];
+      if (pairs.length) {
+        const older = splitPairs(pairs);
+        // 这些 older 都比当前 first 更早，需前置
+        session.value.messages = [...older, ...session.value.messages];
+        // 维持滚动位置（不跳动）
+        nextTick(() => {
+          if (messageContainer.value) {
+            const newHeight = messageContainer.value.scrollHeight;
+            messageContainer.value.scrollTop = newHeight - prevScrollHeight;
+          }
+        });
+      }
+      hasMoreMessages.value = !!data.hasMore;
+    } else {
+      ElMessage.error("加载更早消息失败");
+    }
+  } catch (_) {
+    ElMessage.error("加载更早消息出错");
+  } finally {
+    isLoadingMessages.value = false;
+  }
+};
+
+const handleMessageScroll = () => {
+  const el = messageContainer.value;
+  if (!el || isLoadingMessages.value || !hasMoreMessages.value) return;
+  if (el.scrollTop < 40) {
+    loadOlderMessages();
+  }
+};
+
+// 选择会话
+const selectSession = (chat: ChatList) => {
+  if (appStore.chat.activeSessionId === chat.id) return; // 已是当前
+  appStore.chat.activeSessionId = chat.id;
+  session.value = { id: chat.id, title: chat.title, updatedAt: chat.updatedAt, messages: [] };
+  fetchLatestMessages(chat.id);
 };
 
 const sendMessage = async () => {
@@ -92,10 +174,9 @@ const sendMessage = async () => {
   }
   const content = draft.value.trim();
   draft.value = "";
-  addUserMessage(content, new Date().toISOString());
   scrollToBottom();
   isTyping.value = true;
-  // TODO: 接入 AI 回复接口
+  // TODO: 调用 AI 回复接口获取回答并追加 (保持与拆分逻辑一致)
   isTyping.value = false;
 };
 
@@ -119,16 +200,7 @@ const createNewSession = async () => {
     const response = await api.get("/chat/sessions");
     if (response.data.code === 1) {
       appStore.chat.activeSessionId = response.data.data;
-      session.value = {
-        id: response.data.data,
-        title: "新的对话",
-        messages: [] as ChatMessage[],
-        updatedAt: new Date().toISOString(),
-      };
-      // 新建后放在列表顶部，避免重复
-      const idx = chatList.value.findIndex(c => c.id === session.value!.id);
-      if (idx >= 0) chatList.value.splice(idx, 1);
-      chatList.value.unshift({ id: session.value.id, title: session.value.title, updatedAt: session.value.updatedAt });
+      session.value = { id: response.data.data, title: "新的对话", messages: [], updatedAt: new Date().toISOString() };
     } else {
       ElMessage.error("创建新对话失败，请稍后重试。");
     }
@@ -137,23 +209,19 @@ const createNewSession = async () => {
   }
 };
 
-watch(() => session.value?.messages.length, () => { scrollToBottom(); });
-
 onMounted(() => {
   getQuickPrompts();
   createNewSession();
-  loadSessions(true); // 首次加载最近更新的几条
+  loadSessions(true);
   nextTick(() => {
-    if (sessionListContainer.value) {
-      sessionListContainer.value.addEventListener('scroll', handleSessionScroll);
-    }
+    if (sessionListContainer.value) sessionListContainer.value.addEventListener('scroll', handleSessionScroll);
+    if (messageContainer.value) messageContainer.value.addEventListener('scroll', handleMessageScroll);
   });
 });
 
 onBeforeUnmount(() => {
-  if (sessionListContainer.value) {
-    sessionListContainer.value.removeEventListener('scroll', handleSessionScroll);
-  }
+  if (sessionListContainer.value) sessionListContainer.value.removeEventListener('scroll', handleSessionScroll);
+  if (messageContainer.value) messageContainer.value.removeEventListener('scroll', handleMessageScroll);
 });
 </script>
 
@@ -162,26 +230,21 @@ onBeforeUnmount(() => {
     <div class="chat">
       <aside class="session-panel">
         <p class="panel-title">我的对话</p>
-        <!-- 改为可滚动 + 分页加载 -->
         <ul ref="sessionListContainer" class="session-list-scroll">
           <li v-if="!chatList.length && !isLoadingSessions">暂无会话</li>
-          <li v-for="chat in chatList" :key="chat.id" :class="['session-item', { active: chat.id === appStore.chat.activeSessionId }]">
+          <li v-for="chat in chatList" :key="chat.id" :class="['session-item', { active: chat.id === appStore.chat.activeSessionId }]" @click="selectSession(chat)">
             <div class="session-title">{{ chat.title }}</div>
             <p class="time">最近更新：{{ new Date(chat.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}</p>
           </li>
           <li v-if="isLoadingSessions" class="loading">加载中...</li>
           <li v-else-if="!hasMoreSessions && chatList.length" class="no-more">没有更多了</li>
         </ul>
-
         <div class="prompt-box">
           <p>不知道从哪里开始？可以试试：</p>
-          <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="usePrompt(prompt)">
-            {{ prompt }}
-          </button>
+          <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="usePrompt(prompt)">{{ prompt }}</button>
           <button class="refresh-btn" @click="getQuickPrompts">换一批🔎</button>
         </div>
       </aside>
-
       <section class="conversation" aria-live="polite">
         <div class="header">
           <div class="avatar">🤖</div>
@@ -190,24 +253,19 @@ onBeforeUnmount(() => {
             <p>温柔倾听 · 24h 同步陪伴</p>
           </div>
         </div>
-
         <div ref="messageContainer" class="message-list">
-          <template v-if="session">
-            <article v-for="message in session.messages" :key="message.role + message.createdAt + message.content" class="message" :class="message.role">
+          <template v-if="session && session.messages.length">
+            <article v-for="m in session.messages" :key="m.id + '-' + m.role" class="message" :class="m.role">
               <div class="bubble">
-                <p>{{ message.content }}</p>
-                <time>{{ new Date(message.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) }}</time>
+                <p>{{ m.content }}</p>
+                <time>{{ new Date(m.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) }}</time>
               </div>
             </article>
-            <div v-if="isTyping" class="typing">
-              <span />
-              <span />
-              <span />
-            </div>
+            <div v-if="isLoadingMessages" class="loading-older">加载更早...</div>
+            <div v-if="isTyping" class="typing"><span/><span/><span/></div>
           </template>
-          <p v-else class="placeholder">开始第一段对话，让我认识你。</p>
+          <p v-else class="placeholder">{{ session ? '暂无消息，开始你的第一句吧。' : '开始第一段对话，让我认识你。' }}</p>
         </div>
-
         <form class="composer" @submit.prevent="sendMessage">
           <button type="button" class="guide-btn" @click="createNewSession">新的对话</button>
           <textarea v-model="draft" rows="2" placeholder="分享此刻的想法与感受…" />
@@ -377,6 +435,18 @@ onBeforeUnmount(() => {
   max-height: 520px;
 }
 
+.message-list::before {
+  /* 可选顶部渐隐 */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
 .message {
   display: flex;
 }
@@ -530,6 +600,28 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
   color: #67759d;
   padding: 0.4rem 0;
+}
+
+.loading-older {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #7082a3;
+}
+
+.message-list {
+  position: relative;
+}
+
+.message-list::before {
+  /* 可选顶部渐隐 */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
 
 @media (max-width: 980px) {
