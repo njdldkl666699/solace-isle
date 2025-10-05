@@ -32,7 +32,7 @@ export type ChatMessage = {
 };
 
 export type ChatSession = {
-  id: string;
+  id: string | null; // null 表示新会话，非 null 表示已有会话
   title: string;
   updatedAt: string;
   messages: ChatMessage[];
@@ -177,7 +177,7 @@ export const useAppStore = defineStore("app", {
       entries: [] as DiaryEntry[],
     },
     chat: {
-      activeSessionId: "session-main",
+      activeSessionId: "" as string | null,
       quickPrompts: [] as string[],
     },
     cbt: {

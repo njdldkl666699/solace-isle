@@ -155,10 +155,19 @@ const handleMessageScroll = () => {
 
 /* ================= 选择会话 ================= */
 const selectSession = (chat: ChatList) => {
-  if (isStreaming.value) { ElMessage.warning('正在生成，暂不能切换'); return; }
+  if (isStreaming.value) {
+    ElMessage.warning('正在生成，暂不能切换');
+    return;
+  }
   if (appStore.chat.activeSessionId === chat.id) return;
   appStore.chat.activeSessionId = chat.id;
-  session.value = { id: chat.id, title: chat.title, updatedAt: chat.updatedAt, messages: [] };
+  session.value = {
+    id: chat.id,
+    title: chat.title,
+    updatedAt:
+    chat.updatedAt,
+    messages: []
+  };
   fetchLatestMessages(chat.id);
 };
 
@@ -180,18 +189,22 @@ const appendAIChunk = (messageId: string, delta: string) => {
 };
 const finalizePair = async () => {
   if (!session.value) return;
-  isStreaming.value = false; isTyping.value = false; currentTaskId.value = null; currentMessageId.value = null;
+  isStreaming.value = false;
+  isTyping.value = false;
+  currentTaskId.value = null;
+  currentMessageId.value = null;
   if (session.value.title === '新的对话') {
     try {
       const r = await api.get(`/chat/title/${session.value.id}`);
-      if (r.data?.code === 1 && r.data.data) session.value.title = r.data.data; else session.value.title = pendingUserContent.slice(0,20) || '新的对话';
+      if (r.data?.code === 1 && r.data.data) session.value.title = r.data.data;
+      else session.value.title = pendingUserContent.slice(0,20) || '新的对话';
     } catch {
       session.value.title = pendingUserContent.slice(0,20) || '新的对话';
     }
     const idx = chatList.value.findIndex(c => c.id === session.value!.id);
     if (idx >= 0) chatList.value.splice(idx,1);
     chatList.value.unshift({
-      id: session.value.id,
+      id: session.value.id as string,
       title: session.value.title,
       updatedAt: new Date().toISOString()
     });
@@ -213,36 +226,78 @@ const stopStreamingLocally = () => {
 };
 const streamChat = async (query: string) => {
   if (!session.value) return;
-  isStreaming.value = true; isTyping.value = true; currentTaskId.value = null; currentMessageId.value = null;
+  isStreaming.value = true;
+  isTyping.value = true;
+  currentTaskId.value = null;
+  currentMessageId.value = null;
   abortController = new AbortController();
   try {
-    const url = `${api.defaults.baseURL || ''}/chat/${session.value.id}`.replace(/([^:])\/\//g,'$1/');
-    const resp = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'text/event-stream' }, body: JSON.stringify({ query }), signal: abortController.signal });
+    const url = `${api.defaults.baseURL || ''}/chat`.replace(/([^:])\/\//g,'$1/');
+    const resp = await fetch(url, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Accept':'text/event-stream'
+      },
+      body: JSON.stringify({
+        query: query,
+        id: appStore.chat.activeSessionId
+      }),
+      signal: abortController.signal
+    });
     if (!resp.ok || !resp.body) throw new Error('请求失败');
     const reader = resp.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
     while (true) {
-      const { value, done } = await reader.read(); if (done) break;
+      const { value, done } = await reader.read();
+      if (done) break;
       buffer += decoder.decode(value, { stream: true });
       let sep;
       while ((sep = buffer.indexOf('\n\n')) !== -1) {
-        const raw = buffer.slice(0, sep).trim(); buffer = buffer.slice(sep + 2);
+        const raw = buffer.slice(0, sep).trim();
+        buffer = buffer.slice(sep + 2);
         if (!raw.startsWith('data:')) continue;
-        let evt: any; try { evt = JSON.parse(raw.replace(/^data:\s*/, '')); } catch { continue; }
+        let evt: any;
+        try {
+          evt = JSON.parse(raw.replace(/^data:\s*/, ''));
+        } catch { continue; }
         const ev = evt.event;
         if (ev === 'ping') continue;
-        if (ev === 'error') { ElMessage.error(evt.message || '生成出错'); stopStreamingLocally(); return; }
+        if (ev === 'error') {
+          ElMessage.error(evt.message || '生成出错');
+          stopStreamingLocally();
+          return;
+        }
         if (evt.taskId) currentTaskId.value = evt.taskId;
-        if (evt.messageId && !currentMessageId.value) { currentMessageId.value = evt.messageId; pushInitialPair(evt.messageId); }
-        if (ev === 'message' && evt.answer) { appendAIChunk(currentMessageId.value!, evt.answer); scrollToBottom(); }
-        else if (ev === 'messageEnd') { await finalizePair(); }
+        if (evt.messageId && !currentMessageId.value) {
+          currentMessageId.value = evt.messageId;
+          pushInitialPair(evt.messageId);
+        }
+        if (ev === 'message' && evt.answer) {
+          appendAIChunk(currentMessageId.value!, evt.answer);
+          scrollToBottom();
+          if(appStore.chat.activeSessionId === null){
+            appStore.chat.activeSessionId = evt.conversationId;
+            session.value.id = appStore.chat.activeSessionId;
+          }
+        }
+        else if (ev === 'messageEnd') {
+          await finalizePair();
+          if(appStore.chat.activeSessionId === null){
+            appStore.chat.activeSessionId = evt.conversationId;
+            session.value.id = appStore.chat.activeSessionId;
+          }
+        }
       }
     }
   } catch (e: any) {
-    if (e?.name === 'AbortError') ElMessage.info('已停止生成'); else ElMessage.error(e?.message || '流式请求失败');
+    if (e?.name === 'AbortError') ElMessage.info('已停止生成');
+    else ElMessage.error(e?.message || '流式请求失败');
   } finally {
-    abortController = null; isTyping.value = false; isStreaming.value = false;
+    abortController = null;
+    isTyping.value = false;
+    isStreaming.value = false;
   }
 };
 const stopGeneration = async () => {
@@ -253,10 +308,22 @@ const stopGeneration = async () => {
 
 /* ================= 发送消息（触发流式） ================= */
 const sendMessage = async () => {
-  if (isStreaming.value) { ElMessage.warning('正在生成，请稍候'); return; }
-  if (!session.value) { ElMessage.error('会话未初始化'); return; }
-  const content = draft.value.trim(); if (!content) { ElMessage.warning('请输入消息内容'); return; }
-  pendingUserContent = content; draft.value = ''; await streamChat(content);
+  if (isStreaming.value) {
+    ElMessage.warning('正在生成，请稍候');
+    return;
+  }
+  if (!session.value) {
+    ElMessage.error('会话未初始化');
+    return;
+  }
+  const content = draft.value.trim();
+  if (!content) {
+    ElMessage.warning('请输入消息内容');
+    return;
+  }
+  pendingUserContent = content;
+  draft.value = '';
+  await streamChat(content);
 };
 
 /* ================= 快捷提示词 & 新建会话 ================= */
@@ -271,18 +338,13 @@ const getQuickPrompts = async () => {
 // 新会话：首次消息发送前不加入 chatList，等首次 AI 回复结束后再 finalize 加入
 const createNewSession = async () => {
   if (isStreaming.value) { ElMessage.warning('请先停止当前生成'); return; }
-  try {
-    const r = await api.get('/chat/sessions');
-    if (r.data?.code === 1) {
-      appStore.chat.activeSessionId = r.data.data;
-      session.value = {
-        id: r.data.data,
-        title:'新的对话',
-        updatedAt: new Date().toISOString(),
-        messages: []
-      };
-    } else ElMessage.error('创建新对话失败');
-  } catch { ElMessage.error('创建新对话失败'); }
+   appStore.chat.activeSessionId = null;
+   session.value = {
+     id: appStore.chat.activeSessionId,
+     title:'新的对话',
+     updatedAt: new Date().toISOString(),
+     messages: []
+   };
 };
 
 /* ================= 重命名 & 删除会话 ================= */
