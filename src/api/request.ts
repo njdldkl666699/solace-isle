@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useAppStore } from "../stores/appStore";
-import {ElMessageBox} from "element-plus";
+import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
 
@@ -27,12 +27,8 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      ElMessageBox.alert('登录已过期，请重新登陆', '提示', {
-          confirmButtonText: '确定',
-          type: 'warning'
-      }).then(() => {
-          appStore.logout();
-      });
+      ElMessage.error("登录认证失败，请重新登录");
+      appStore.logout();
     }
     return Promise.reject(error);
   }

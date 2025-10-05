@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessageBox } from "element-plus";
 import { sha256 } from 'js-sha256';
 
-const router = useRouter();
 const appStore = useAppStore();
 
 const form = reactive({ account: "", password: "" });
@@ -28,7 +26,6 @@ const handleSubmit = async () => {
     if(response.data.code === 1){
       loading.value = false;
       appStore.authenticate(response.data.data);
-      await router.push("/dashboard");
     }
     else{
       loading.value = false;

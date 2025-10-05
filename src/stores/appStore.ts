@@ -196,6 +196,10 @@ export const useAppStore = defineStore("app", {
     authenticate(token: string) {
       this.isAuthenticated = true;
       this.token = token;
+      const JWTsplit = token.split('.') as string[];
+      const payload = JSON.parse(atob(JWTsplit[1] as string));
+      this.user.studentId = payload.id;
+      router.push("/dashboard");
     },
     logout() {
       this.isAuthenticated = false;

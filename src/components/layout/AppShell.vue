@@ -134,11 +134,10 @@ function checkJWT() {
 
   try {
     const payload = JSON.parse(atob(JWTsplit[1] as string));
-
     if (!payload.id || payload.id !== appStore.user.studentId) {
       ElMessage.error("登录状态已过期，请重新登录");
-    appStore.logout();
-    return;
+      appStore.logout();
+      return;
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
