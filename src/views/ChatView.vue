@@ -206,7 +206,26 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   text-align: left;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* 新增：普通提示按钮的悬浮/交互反馈（不影响刷新按钮） */
+.prompt-box button:not(.refresh-btn):hover {
+  background: linear-gradient(135deg, #f6f9ff, #eef3ff);
+  border-color: rgba(93,130,255,0.45);
+  box-shadow: 0 6px 14px rgba(93,130,255,0.18);
+  transform: translateY(-2px);
+  color: #2c3a5c;
+}
+.prompt-box button:not(.refresh-btn):active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(93,130,255,0.25);
+  background: linear-gradient(135deg, #edf2ff, #e4ecff);
+}
+.prompt-box button:not(.refresh-btn):focus-visible {
+  outline: none;
+  border-color: rgba(93,130,255,0.7);
+  box-shadow: 0 0 0 3px rgba(93,130,255,0.35);
 }
 
 .prompt-box .refresh-btn {
