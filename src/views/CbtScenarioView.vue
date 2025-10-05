@@ -5,6 +5,35 @@ import AppShell from "../components/layout/AppShell.vue";
 import {type CbtScenarioStep, type Evidence, useAppStore} from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessage } from "element-plus";
+// 新增：markdown 相关
+import { marked } from 'marked';
+import hljs from 'highlight.js';
+
+// markdown 渲染配置（含代码高亮）
+marked.setOptions({
+  // @ts-ignore
+  highlight(code, lang) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value;
+      }
+      return hljs.highlightAuto(code).value;
+    } catch (_) {
+      return code;
+    }
+  },
+  gfm: true,
+  breaks: true
+});
+
+// 简单净化（防止脚本注入）；如需更强净化可引入 DOMPurify（此处为轻量实现）
+const sanitize = (html: string) => {
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/on[a-zA-Z]+\s*=\s*"[^"]*"/g, '')
+    .replace(/on[a-zA-Z]+\s*=\s*'[^']*'/g, '')
+    .replace(/on[a-zA-Z]+\s*=\s*[^\s>]+/g, '');
+};
 
 const props = defineProps<{ id: string }>();
 
@@ -170,6 +199,17 @@ interface CbtAnswer {
 const isSubmitting = ref(false);
 const isStreamFinished = ref(false);
 const streamAnswer = ref("");
+// 新增：markdown html 计算
+const streamAnswerHtml = computed(() => {
+  if (!streamAnswer.value) return '';
+  try {
+    const raw = marked.parse(streamAnswer.value) as string;
+    return sanitize(raw);
+  } catch (e) {
+    return streamAnswer.value; // 兜底直接原文
+  }
+});
+
 const streamError = ref("");
 const taskId = ref<string | null>(null);
 
@@ -371,7 +411,14 @@ const submitScenario = async () => {
               <span class="error">{{ streamError }}</span>
             </template>
             <template v-else>
-              <pre class="analysis-content">{{ streamAnswer || (isSubmitting ? '分析生成中…' : '尚未获取分析') }}</pre>
+              <div
+                class="analysis-content markdown-body"
+                v-if="streamAnswer || isSubmitting"
+                v-html="streamAnswerHtml || (isSubmitting ? '分析生成中…' : '尚未获取分析')"
+              />
+              <template v-else>
+                <span class="analysis-content">尚未获取分析</span>
+              </template>
             </template>
           </div>
         </div>
@@ -635,6 +682,23 @@ const submitScenario = async () => {
   pointer-events: none;
 }
 @keyframes pulse { to { background-position: 40px 0; } }
-.analysis-content { margin: 0; font-family: inherit; color: #4a5d8a; }
+.analysis-content { margin: 0; font-family: inherit; color: #4a5d8a; white-space: normal; }
+
+/* markdown 基础样式 */
+.markdown-body { line-height: 1.55; font-size: 0.95rem; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5 { font-weight:600; line-height:1.3; margin:1rem 0 0.6rem; }
+.markdown-body h1 { font-size:1.45rem; }
+.markdown-body h2 { font-size:1.3rem; }
+.markdown-body h3 { font-size:1.15rem; }
+.markdown-body p { margin:0.4rem 0 0.8rem; }
+.markdown-body ul, .markdown-body ol { padding-left:1.2rem; margin:0.4rem 0 0.8rem; }
+.markdown-body li { margin:0.25rem 0; }
+.markdown-body code { background: rgba(93,130,255,0.10); padding:0.15rem 0.4rem; border-radius:6px; font-size:0.85rem; }
+.markdown-body pre { background: #1f2430; color:#e6eef7; padding:0.9rem 1rem; border-radius:12px; overflow:auto; font-size:0.85rem; }
+.markdown-body pre code { background: transparent; padding:0; color:inherit; }
+.markdown-body blockquote { margin:0.6rem 0; padding:0.4rem 0.9rem; border-left:4px solid #5d82ff; background: rgba(93,130,255,0.10); border-radius:0 10px 10px 0; color:#3a4c79; }
+.markdown-body hr { border:none; height:1px; background:linear-gradient(90deg, rgba(93,130,255,0.3), rgba(93,130,255,0)); margin:1.4rem 0; }
+.markdown-body a { color:#4d6bff; text-decoration:none; }
+.markdown-body a:hover { text-decoration:underline; }
 .error { color: #d93030; font-weight: 600; }
 </style>
