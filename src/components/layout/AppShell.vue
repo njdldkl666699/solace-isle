@@ -39,10 +39,10 @@ async function getUserInfo() {
     if(response.data.code === 1){
       appStore.updateUser(response.data.data);
     }else {
-      ElMessage.error("无法获取用户信息");
+      ElMessage.error("无法获取用户信息" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
   }catch (err: any){
-    ElMessage.error("无法获取用户信息");
+    ElMessage.error("无法获取用户信息，请检查网络连接");
   }
 }
 

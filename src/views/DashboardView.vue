@@ -52,10 +52,10 @@ const getCurrentMood = async () => {
     if(response.data.code === 1){
       appStore.updateCurrentMood(response.data.data);
     }else {
-      ElMessage.error("无法获取当前情绪");
+      ElMessage.error("无法获取当前情绪" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
   }catch {
-    ElMessage.error("无法获取当前情绪");
+    ElMessage.error("无法获取当前情绪，请检查网络连接");
   }
 }
 
@@ -71,10 +71,10 @@ const getWeeklyMoodTrend = async () => {
       appStore.updateWeeklyMoodTrend(response.data.data.moodTrend);
       appStore.updateStreakDays(response.data.data.consecutiveDays);
     }else {
-      ElMessage.error("无法获取情绪轨迹");
+      ElMessage.error("无法获取情绪轨迹" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
   }catch {
-    ElMessage.error("无法获取情绪轨迹");
+    ElMessage.error("无法获取情绪轨迹，请检查网络连接");
   }
 }
 
@@ -85,10 +85,10 @@ const getAchievements = async () => {
     if (response.data.code === 1) {
       appStore.updateAchievements(response.data.data);
     } else {
-      ElMessage.error("无法获取成就信息");
+      ElMessage.error("无法获取成就信息" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
   } catch {
-    ElMessage.error("无法获取成就信息");
+    ElMessage.error("无法获取成就信息，请检查网络连接");
   }
 };
 
@@ -99,10 +99,10 @@ const getQuickReminders = async () => {
     if (response.data.code === 1) {
       appStore.updateQuickReminders(response.data.data);
     } else {
-      ElMessage.error("无法获取轻声提醒");
+      ElMessage.error("无法获取轻声提醒" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
   } catch {
-    ElMessage.error("无法获取轻声提醒");
+    ElMessage.error("无法获取轻声提醒，请检查网络连接");
   }
 };
 
