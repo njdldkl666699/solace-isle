@@ -12,7 +12,7 @@ api.interceptors.request.use(
   (config) => {
     const token = appStore.token;
     if (token) {
-      config.headers.Authentication = "Bearer " + token;
+      config.headers.Authorization = "Bearer " + token;
     }
     return config;
   },
