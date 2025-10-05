@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, ref, watch} from "vue";
+import { computed, nextTick, onMounted, ref, watch, onBeforeUnmount } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
-import {type ChatList, type ChatMessage, type ChatSession, useAppStore} from "../stores/appStore";
+import { type ChatList, type ChatMessage, type ChatSession, useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
 const session = ref<ChatSession>();
 const chatList = ref<ChatList[]>([]);
+
+// 新增：分页 / 无限滚动相关状态
+const hasMoreSessions = ref(true); // 后端标识是否还有更多
+const isLoadingSessions = ref(false); // 当前是否在加载
+const sessionListContainer = ref<HTMLUListElement | null>(null); // 列表滚动容器引用
+const pageLimit = 20; // 每次请求条数（可按需调整）
 
 const draft = ref("");
 const isTyping = ref(false);
@@ -25,26 +31,54 @@ const scrollToBottom = () => {
 
 const addUserMessage = (content: string, date: string) => {
   if (!session.value) return;
-
-  const newMessage: ChatMessage = {
-    role: "user",
-    content: content,
-    createdAt: date,
-  };
-
+  const newMessage: ChatMessage = { role: "user", content, createdAt: date };
   session.value.messages.push(newMessage);
 };
 
-const addAIMessage = (content: string, date: string) => {
-  if (!session.value) return;
+// 加载会话列表（初次/分页）
+const loadSessions = async (initial = false) => {
+  if (isLoadingSessions.value) return;
+  if (!hasMoreSessions.value && !initial) return;
+  isLoadingSessions.value = true;
+  try {
+    const lastItem = !initial && chatList.value.length ? chatList.value[chatList.value.length - 1] : null;
+    const params: Record<string, any> = { limit: pageLimit };
+    if (lastItem) params.lastId = lastItem.id; // 仅分页时携带 lastId
 
-  const newMessage: ChatMessage = {
-    role: "ai",
-    content: content,
-    createdAt: date,
-  };
+    const response = await api.get("/chat/sessions/list", { params });
+    if (response.data?.code === 1) {
+      const data = response.data.data || {};
+      const list: any[] = data.sessions || [];
+      const mapped: ChatList[] = list.map(s => ({
+        id: s.id,
+        title: s.title,
+        updatedAt: s.datetime || s.updatedAt || new Date().toISOString(),
+      }));
+      if (initial) {
+        chatList.value = mapped;
+      } else {
+        const exist = new Set(chatList.value.map(s => s.id));
+        mapped.forEach(m => { if (!exist.has(m.id)) chatList.value.push(m); });
+      }
+      hasMoreSessions.value = !!data.hasMore;
+    } else {
+      ElMessage.error("获取会话列表失败");
+    }
+  } catch (_) {
+    ElMessage.error("获取会话列表出错");
+  } finally {
+    isLoadingSessions.value = false;
+  }
+};
 
-  session.value.messages.push(newMessage);
+// 滚动到底部触发加载更多
+const handleSessionScroll = () => {
+  const el = sessionListContainer.value;
+  if (!el || isLoadingSessions.value || !hasMoreSessions.value) return;
+  const distanceToBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+  if (distanceToBottom < 40) {
+    loadSessions();
+  }
 };
 
 const sendMessage = async () => {
@@ -58,31 +92,24 @@ const sendMessage = async () => {
   }
   const content = draft.value.trim();
   draft.value = "";
-
-  // 添加用户消息
-  addUserMessage(content ,new Date().toISOString());
+  addUserMessage(content, new Date().toISOString());
   scrollToBottom();
-
   isTyping.value = true;
-  //调用API获取AI回复
-
+  // TODO: 接入 AI 回复接口
   isTyping.value = false;
 };
 
-const usePrompt = (prompt: string) => {
-  draft.value = prompt;
-};
+const usePrompt = (prompt: string) => { draft.value = prompt; };
 
 const getQuickPrompts = async () => {
   try {
     const response = await api.get("/chat");
-
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       appStore.setQuickPrompts(response.data.data || []);
     } else {
       ElMessage.error("获取快捷提示词失败，请稍后重试。");
     }
-  } catch (error) {
+  } catch (_) {
     ElMessage.error("获取快捷提示词失败，请稍后重试。");
   }
 };
@@ -90,7 +117,6 @@ const getQuickPrompts = async () => {
 const createNewSession = async () => {
   try {
     const response = await api.get("/chat/sessions");
-
     if (response.data.code === 1) {
       appStore.chat.activeSessionId = response.data.data;
       session.value = {
@@ -98,26 +124,37 @@ const createNewSession = async () => {
         title: "新的对话",
         messages: [] as ChatMessage[],
         updatedAt: new Date().toISOString(),
-      }
+      };
+      // 新建后放在列表顶部，避免重复
+      const idx = chatList.value.findIndex(c => c.id === session.value!.id);
+      if (idx >= 0) chatList.value.splice(idx, 1);
+      chatList.value.unshift({ id: session.value.id, title: session.value.title, updatedAt: session.value.updatedAt });
     } else {
       ElMessage.error("创建新对话失败，请稍后重试。");
     }
-  } catch (error) {
+  } catch (_) {
     ElMessage.error("创建新对话失败，请稍后重试。");
   }
 };
 
-watch(
-  () => session.value?.messages.length,
-  () => {
-    scrollToBottom();
-  }
-);
+watch(() => session.value?.messages.length, () => { scrollToBottom(); });
 
 onMounted(() => {
   getQuickPrompts();
   createNewSession();
-})
+  loadSessions(true); // 首次加载最近更新的几条
+  nextTick(() => {
+    if (sessionListContainer.value) {
+      sessionListContainer.value.addEventListener('scroll', handleSessionScroll);
+    }
+  });
+});
+
+onBeforeUnmount(() => {
+  if (sessionListContainer.value) {
+    sessionListContainer.value.removeEventListener('scroll', handleSessionScroll);
+  }
+});
 </script>
 
 <template>
@@ -125,12 +162,15 @@ onMounted(() => {
     <div class="chat">
       <aside class="session-panel">
         <p class="panel-title">我的对话</p>
-        <ul>
-          <li v-if="!chatList">暂无会话</li>
-          <li v-else v-for="chat in chatList" class="active">
+        <!-- 改为可滚动 + 分页加载 -->
+        <ul ref="sessionListContainer" class="session-list-scroll">
+          <li v-if="!chatList.length && !isLoadingSessions">暂无会话</li>
+          <li v-for="chat in chatList" :key="chat.id" :class="['session-item', { active: chat.id === appStore.chat.activeSessionId }]">
             <div class="session-title">{{ chat.title }}</div>
-            <p class="time">最近更新：{{ new Date(chat.updatedAt).toLocaleString("zh-CN", { hour12: false }) }}</p>
+            <p class="time">最近更新：{{ new Date(chat.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}</p>
           </li>
+          <li v-if="isLoadingSessions" class="loading">加载中...</li>
+          <li v-else-if="!hasMoreSessions && chatList.length" class="no-more">没有更多了</li>
         </ul>
 
         <div class="prompt-box">
@@ -153,16 +193,10 @@ onMounted(() => {
 
         <div ref="messageContainer" class="message-list">
           <template v-if="session">
-            <article v-for="message in session.messages" class="message" :class="message.role">
+            <article v-for="message in session.messages" :key="message.role + message.createdAt + message.content" class="message" :class="message.role">
               <div class="bubble">
                 <p>{{ message.content }}</p>
-                <time>{{
-                  new Date(message.createdAt).toLocaleTimeString("zh-CN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })
-                }}</time>
+                <time>{{ new Date(message.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) }}</time>
               </div>
             </article>
             <div v-if="isTyping" class="typing">
@@ -459,6 +493,43 @@ onMounted(() => {
   background: linear-gradient(135deg, #5d82ff, #8fa3ff);
   color: #fff;
   box-shadow: 0 12px 24px rgba(93, 130, 255, 0.2);
+}
+
+.session-list-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.session-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.session-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(93, 130, 255, 0.35);
+  border-radius: 3px;
+}
+
+.session-item {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(246, 249, 255, 0.85);
+  border: 1px solid rgba(93, 130, 255, 0.08);
+}
+
+.session-item.active {
+  border-color: rgba(93, 130, 255, 0.32);
+  box-shadow: 0 8px 18px rgba(93, 130, 255, 0.18);
+}
+
+.session-list-scroll .loading,
+.session-list-scroll .no-more {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #67759d;
+  padding: 0.4rem 0;
 }
 
 @media (max-width: 980px) {
