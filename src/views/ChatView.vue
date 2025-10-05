@@ -9,7 +9,10 @@ import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 
 /* ================= Markdown 配置 ================= */
-marked.setOptions({ breaks: true, mangle: false, headerIds: false });
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
 const renderMarkdown = (text: string) => {
   if (!text) return "";
   const safe = text.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
