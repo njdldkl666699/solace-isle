@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import router from "../router";
 
 export type WeeklyMoodPoint = {
   day: string;
@@ -199,6 +200,7 @@ export const useAppStore = defineStore("app", {
     logout() {
       this.isAuthenticated = false;
       this.token = "";
+      router.push("/login");
     },
     updateUser(user: User){
       this.user.nickname = user.nickname || "名字不见了😭";

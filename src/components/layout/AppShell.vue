@@ -116,7 +116,47 @@ async function initialize() {
   await connectWebSocket();
 }
 
+function checkJWT() {
+  const token = appStore.token as string;
+  if (!token) {
+    ElMessage.error("登录状态已过期，请重新登录");
+    appStore.logout();
+    return;
+  }
+
+  const JWTsplit = token.split('.') as string[];
+
+  if(JWTsplit.length !== 3) {
+    ElMessage.error("登录状态已过期，请重新登录");
+    appStore.logout();
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(atob(JWTsplit[1] as string));
+
+    if (!payload.id || payload.id !== appStore.user.studentId) {
+      ElMessage.error("登录状态已过期，请重新登录");
+    appStore.logout();
+    return;
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (payload.exp < currentTime) {
+      ElMessage.error("登录状态已过期，请重新登录");
+      appStore.logout();
+      return;
+    }
+  } catch (error) {
+    ElMessage.error("登录状态已过期，请重新登录");
+    appStore.logout();
+    return;
+  }
+
+}
+
 onMounted(() => {
+  checkJWT();
   initialize();
 });
 </script>
