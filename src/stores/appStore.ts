@@ -198,7 +198,7 @@ export const useAppStore = defineStore("app", {
         },
       ] satisfies ChatSession[],
       activeSessionId: "session-main",
-      quickPrompts: ["我有点睡不着，可以陪我聊聊吗？", "帮我整理一下今天的情绪亮点。", "我担心自己的表现不够好。"],
+      quickPrompts: [] as string[],
     },
     cbt: {
       scenarios: [] as CbtScenario[],
@@ -264,6 +264,9 @@ export const useAppStore = defineStore("app", {
     },
     updateGreeting(){
       this.greeting = this.calcGreeting();
+    },
+    setQuickPrompts(prompts: string[]){
+      this.chat.quickPrompts = prompts;
     },
     addUserMessage(sessionId: string, content: string) {
       const session = this.chat.sessions.find((item) => item.id === sessionId);

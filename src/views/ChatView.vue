@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import {computed, nextTick, onMounted, ref, watch} from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
+import api from "../api/request.ts";
+import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
 const session = computed(() => appStore.activeChatSession);
@@ -41,12 +43,34 @@ const usePrompt = (prompt: string) => {
   draft.value = prompt;
 };
 
+const getQuickPrompts = async () => {
+  try {
+    const response = await api.get("/chat");
+
+    if(response.data.code === 1){
+      appStore.setQuickPrompts(response.data.data || []);
+    } else {
+      ElMessage.error("获取快捷提示词失败，请稍后重试。");
+    }
+  } catch (error) {
+    ElMessage.error("获取快捷提示词失败，请稍后重试。");
+  }
+};
+
+const reStart = () => {
+
+};
+
 watch(
   () => session.value?.messages.length,
   () => {
     scrollToBottom();
   }
 );
+
+onMounted(() => {
+  getQuickPrompts();
+})
 </script>
 
 <template>
@@ -67,6 +91,7 @@ watch(
           <button v-for="prompt in quickPrompts" :key="prompt" type="button" @click="usePrompt(prompt)">
             {{ prompt }}
           </button>
+          <button @click="getQuickPrompts">换一批🔎</button>
         </div>
       </aside>
 
@@ -103,7 +128,7 @@ watch(
         </div>
 
         <form class="composer" @submit.prevent="sendMessage">
-          <button type="button" class="guide-btn" @click="draft = '我想聊聊今天的心情。'">引导器</button>
+          <button type="button" class="guide-btn" @click="reStart">新的对话</button>
           <textarea v-model="draft" rows="2" placeholder="分享此刻的想法与感受…" />
           <button type="submit">发送</button>
         </form>
