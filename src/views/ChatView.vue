@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {computed, nextTick, onMounted, ref, watch} from "vue";
 import AppShell from "../components/layout/AppShell.vue";
-import { useAppStore } from "../stores/appStore";
+import {type ChatList, type ChatMessage, type ChatSession, useAppStore} from "../stores/appStore";
 import api from "../api/request.ts";
 import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
-const session = computed(() => appStore.activeChatSession);
+const session = ref<ChatSession>();
+const chatList = ref<ChatList[]>([]);
 
 const draft = ref("");
 const isTyping = ref(false);
@@ -22,21 +23,50 @@ const scrollToBottom = () => {
   });
 };
 
-const sendMessage = () => {
-  if (!session.value || !draft.value.trim()) return;
+const addUserMessage = (content: string, date: string) => {
+  if (!session.value) return;
+
+  const newMessage: ChatMessage = {
+    role: "user",
+    content: content,
+    createdAt: date,
+  };
+
+  session.value.messages.push(newMessage);
+};
+
+const addAIMessage = (content: string, date: string) => {
+  if (!session.value) return;
+
+  const newMessage: ChatMessage = {
+    role: "ai",
+    content: content,
+    createdAt: date,
+  };
+
+  session.value.messages.push(newMessage);
+};
+
+const sendMessage = async () => {
+  if (!session.value) {
+    ElMessage.error("会话未初始化，请稍后重试。");
+    return;
+  }
+  if (!draft.value.trim()) {
+    ElMessage.warning("请输入消息内容");
+    return;
+  }
   const content = draft.value.trim();
   draft.value = "";
-  appStore.addUserMessage(session.value.id, content);
+
+  // 添加用户消息
+  addUserMessage(content ,new Date().toISOString());
   scrollToBottom();
+
   isTyping.value = true;
-  window.setTimeout(() => {
-    appStore.addAiMessage(
-      session.value!.id,
-      "听见你说“" + content + "”。先为自己已经做的努力肯定一下，我们可以尝试把担忧拆成更小的部分，一步步来处理。"
-    );
-    isTyping.value = false;
-    scrollToBottom();
-  }, 1000);
+  //调用API获取AI回复
+
+  isTyping.value = false;
 };
 
 const usePrompt = (prompt: string) => {
@@ -57,8 +87,24 @@ const getQuickPrompts = async () => {
   }
 };
 
-const reStart = () => {
+const createNewSession = async () => {
+  try {
+    const response = await api.get("/chat/sessions");
 
+    if (response.data.code === 1) {
+      appStore.chat.activeSessionId = response.data.data;
+      session.value = {
+        id: response.data.data,
+        title: "新的对话",
+        messages: [] as ChatMessage[],
+        updatedAt: new Date().toISOString(),
+      }
+    } else {
+      ElMessage.error("创建新对话失败，请稍后重试。");
+    }
+  } catch (error) {
+    ElMessage.error("创建新对话失败，请稍后重试。");
+  }
 };
 
 watch(
@@ -70,6 +116,7 @@ watch(
 
 onMounted(() => {
   getQuickPrompts();
+  createNewSession();
 })
 </script>
 
@@ -79,10 +126,10 @@ onMounted(() => {
       <aside class="session-panel">
         <p class="panel-title">我的对话</p>
         <ul>
-          <li v-if="!session">暂无会话</li>
-          <li v-else class="active">
-            <div class="session-title">{{ session.title }}</div>
-            <p class="time">最近更新：{{ new Date(session.updatedAt).toLocaleString("zh-CN", { hour12: false }) }}</p>
+          <li v-if="!chatList">暂无会话</li>
+          <li v-else v-for="chat in chatList" class="active">
+            <div class="session-title">{{ chat.title }}</div>
+            <p class="time">最近更新：{{ new Date(chat.updatedAt).toLocaleString("zh-CN", { hour12: false }) }}</p>
           </li>
         </ul>
 
@@ -106,7 +153,7 @@ onMounted(() => {
 
         <div ref="messageContainer" class="message-list">
           <template v-if="session">
-            <article v-for="message in session.messages" :key="message.id" class="message" :class="message.role">
+            <article v-for="message in session.messages" class="message" :class="message.role">
               <div class="bubble">
                 <p>{{ message.content }}</p>
                 <time>{{
@@ -128,7 +175,7 @@ onMounted(() => {
         </div>
 
         <form class="composer" @submit.prevent="sendMessage">
-          <button type="button" class="guide-btn" @click="reStart">新的对话</button>
+          <button type="button" class="guide-btn" @click="createNewSession">新的对话</button>
           <textarea v-model="draft" rows="2" placeholder="分享此刻的想法与感受…" />
           <button type="submit">发送</button>
         </form>
