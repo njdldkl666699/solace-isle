@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref, onBeforeUnmount } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { type ChatList, type ChatMessage, type ChatSession, useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus"; // 新增 ElMessageBox
 import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
@@ -285,6 +285,65 @@ const createNewSession = async () => {
   } catch { ElMessage.error('创建新对话失败'); }
 };
 
+/* ================= 重命名 & 删除会话 ================= */
+const renameSession = async (chat: ChatList, e?: Event) => {
+  e?.stopPropagation();
+  if (isStreaming.value) { ElMessage.warning('正在生成，暂不能重命名'); return; }
+  try {
+    const { value } = await ElMessageBox.prompt('输入新的会话标题', '重命名会话', {
+      inputValue: chat.title,
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputValidator: (v: string) => v.trim() ? true : '标题不能为空',
+    });
+    const title = value.trim();
+    if (!title || title === chat.title) return;
+    const resp = await api.post(`/chat/sessions/${chat.id}`, { title });
+    if (resp.data?.code === 1) {
+      chat.title = title;
+      chat.updatedAt = new Date().toISOString();
+      if (session.value?.id === chat.id) session.value.title = title;
+      // 置顶
+      const idx = chatList.value.findIndex(c => c.id === chat.id);
+      if (idx > -1) {
+        const [item] = chatList.value.splice(idx,1);
+        if (item) chatList.value.unshift(item);
+      }
+      ElMessage.success('已重命名');
+    } else ElMessage.error('重命名失败');
+  } catch (err: any) {
+    // 取消不提示
+  }
+};
+
+const deleteSession = async (chat: ChatList, e?: Event) => {
+  e?.stopPropagation();
+  if (isStreaming.value) { ElMessage.warning('正在生成，暂不能删除'); return; }
+  try {
+    await ElMessageBox.confirm(`确定删除会话「${chat.title}」？此操作不可撤销。`, '删除确认', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger'
+    });
+    const resp = await api.delete(`/chat/sessions/${chat.id}`);
+    if (resp.data?.code === 1) {
+      const idx = chatList.value.findIndex(c => c.id === chat.id);
+      if (idx > -1) chatList.value.splice(idx,1);
+      const wasActive = session.value?.id === chat.id;
+      if (wasActive) {
+        session.value = undefined;
+        appStore.chat.activeSessionId = '';
+        // 自动创建一个新的空会话，保持体验连续
+        await createNewSession();
+      }
+      ElMessage.success('已删除');
+    } else ElMessage.error('删除失败');
+  } catch (err: any) {
+    // 用户取消
+  }
+};
+
 /* ================= 生命周期 ================= */
 onMounted(() => {
   getQuickPrompts();
@@ -312,6 +371,10 @@ onBeforeUnmount(() => {
           <li v-for="chat in chatList" :key="chat.id" :class="['session-item', { active: chat.id === appStore.chat.activeSessionId }]" @click="selectSession(chat)">
             <div class="session-title">{{ chat.title }}</div>
             <p class="time">最近更新：{{ new Date(chat.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}</p>
+            <div class="session-actions" @click.stop>
+              <button type="button" class="icon-btn" title="重命名" @click="renameSession(chat, $event)" :disabled="isStreaming">✏️</button>
+              <button type="button" class="icon-btn danger" title="删除" @click="deleteSession(chat, $event)" :disabled="isStreaming">🗑️</button>
+            </div>
           </li>
           <li v-if="isLoadingSessions" class="loading">加载中...</li>
           <li v-else-if="!hasMoreSessions && chatList.length" class="no-more">没有更多了</li>
@@ -364,7 +427,7 @@ onBeforeUnmount(() => {
 .session-list-scroll { list-style: none; margin:0; padding:0; display:grid; gap:0.8rem; max-height:300px; overflow-y:auto; padding-right:4px; }
 .session-list-scroll::-webkit-scrollbar { width:6px; }
 .session-list-scroll::-webkit-scrollbar-thumb { background: rgba(93,130,255,0.35); border-radius:3px; }
-.session-item { padding:0.9rem 1rem; border-radius:18px; background:rgba(246,249,255,0.85); border:1px solid rgba(93,130,255,0.08); cursor:pointer; }
+.session-item { position:relative; padding:0.9rem 1rem; border-radius:18px; background:rgba(246,249,255,0.85); border:1px solid rgba(93,130,255,0.08); cursor:pointer; }
 .session-item.active { border-color: rgba(93,130,255,0.32); box-shadow:0 8px 18px rgba(93,130,255,0.18); }
 .session-panel .loading,.session-panel .no-more { text-align:center; font-size:0.8rem; color:#67759d; }
 .session-title { font-weight:600; color:#24345b; }
@@ -411,4 +474,12 @@ onBeforeUnmount(() => {
 .loading-older { text-align:center; font-size:0.75rem; color:#7082a3; }
 @media (max-width:980px){ .chat { grid-template-columns:1fr; } .session-panel { order:2; } }
 @media (max-width:640px){ .composer { grid-template-columns:1fr; } .guide-btn { justify-self:flex-start; } }
+
+.session-actions { position:absolute; top:8px; right:8px; display:flex; gap:4px; opacity:0; transition:opacity .18s ease; }
+.session-item:hover .session-actions, .session-item.active .session-actions { opacity:1; }
+.icon-btn { background:rgba(255,255,255,0.9); border:1px solid rgba(93,130,255,0.25); padding:2px 6px; border-radius:10px; font-size:0.8rem; cursor:pointer; line-height:1.1; box-shadow:0 2px 4px rgba(93,130,255,0.18); }
+.icon-btn:hover { background:linear-gradient(135deg,#f6f9ff,#eef3ff); }
+.icon-btn.danger { border-color:rgba(255,107,107,0.4); }
+.icon-btn.danger:hover { background:linear-gradient(135deg,#ffe9e9,#ffd6d6); }
+.icon-btn:disabled { opacity:.4; cursor:not-allowed; }
 </style>
