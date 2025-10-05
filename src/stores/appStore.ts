@@ -24,7 +24,6 @@ export type DiaryEntry = {
 };
 
 export type ChatMessage = {
-  id: string;
   role: "user" | "ai";
   content: string;
   createdAt: string;
@@ -36,6 +35,12 @@ export type ChatSession = {
   updatedAt: string;
   messages: ChatMessage[];
 };
+
+export type ChatList = {
+    id: string;
+    title: string;
+    updatedAt: string;
+}
 
 export type Evidence = {
     support: string;
@@ -170,33 +175,6 @@ export const useAppStore = defineStore("app", {
       entries: [] as DiaryEntry[],
     },
     chat: {
-      sessions: [
-        {
-          id: "session-main",
-          title: "日常情绪陪伴",
-          updatedAt: "2025-09-30T22:12:00+08:00",
-          messages: [
-            {
-              id: "m1",
-              role: "ai",
-              content: "欢迎回来，林舟。想聊聊今天的心情吗？如果需要，我可以带你做一个两分钟的呼吸练习。",
-              createdAt: "2025-09-30T21:58:00+08:00",
-            },
-            {
-              id: "m2",
-              role: "user",
-              content: "今晚脑子里在过明天的答辩，总感觉会被问倒。",
-              createdAt: "2025-09-30T22:03:00+08:00",
-            },
-            {
-              id: "m3",
-              role: "ai",
-              content: "听上去你很在意这次答辩，希望表现得更好。我们来列一下你已经准备好的部分，好吗？",
-              createdAt: "2025-09-30T22:05:00+08:00",
-            },
-          ] satisfies ChatMessage[],
-        },
-      ] satisfies ChatSession[],
       activeSessionId: "session-main",
       quickPrompts: [] as string[],
     },
@@ -208,9 +186,6 @@ export const useAppStore = defineStore("app", {
     },
   }},
   getters: {
-    activeChatSession(state): ChatSession | undefined {
-      return state.chat.sessions.find((session) => session.id === state.chat.activeSessionId);
-    },
     getScenario: (state) => (id: string) => {
       return state.cbt.scenarios.find((scenario) => scenario.id == id);
     },
@@ -267,30 +242,6 @@ export const useAppStore = defineStore("app", {
     },
     setQuickPrompts(prompts: string[]){
       this.chat.quickPrompts = prompts;
-    },
-    addUserMessage(sessionId: string, content: string) {
-      const session = this.chat.sessions.find((item) => item.id === sessionId);
-      if (!session) return;
-      const timestamp = new Date().toISOString();
-      session.messages.push({
-        id: `${sessionId}-${timestamp}`,
-        role: "user",
-        content,
-        createdAt: timestamp,
-      });
-      session.updatedAt = timestamp;
-    },
-    addAiMessage(sessionId: string, content: string) {
-      const session = this.chat.sessions.find((item) => item.id === sessionId);
-      if (!session) return;
-      const timestamp = new Date().toISOString();
-      session.messages.push({
-        id: `${sessionId}-ai-${timestamp}`,
-        role: "ai",
-        content,
-        createdAt: timestamp,
-      });
-      session.updatedAt = timestamp;
     },
     addQuickEmoji(emoji: string, label: string): boolean {
       if (!emoji || !label) return false;
