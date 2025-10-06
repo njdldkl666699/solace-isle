@@ -247,6 +247,11 @@ const submitScenario = async () => {
   resetStreamState();
   isSubmitting.value = true;
   const payload = buildAnswerPayload();
+  if(payload.length === 0) {
+    ElMessage.error("没有可提交的答案");
+    isSubmitting.value = false;
+    return;
+  }
   try {
     const token = appStore.token;
     const res = await fetch(`${api.defaults.baseURL || ''}/cbt/${scenario.value.id}`, {

@@ -21,7 +21,11 @@ const renderMarkdown = (text: string) => {
 const highlightRenderedCode = () => {
   nextTick(() => {
     const root = messageContainer.value; if (!root) return;
-    root.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el as HTMLElement); } catch { /* ignore */ } });
+    root.querySelectorAll('pre code').forEach(el => {
+      try {
+        hljs.highlightElement(el as HTMLElement);
+      } catch { /* ignore */ }
+    });
   });
 };
 
@@ -193,7 +197,8 @@ const finalizePair = async () => {
   isTyping.value = false;
   currentTaskId.value = null;
   currentMessageId.value = null;
-  if (session.value.title === '新的对话') {
+  if (appStore.chat.activeSessionId === null) {
+    appStore.chat.activeSessionId = session.value.id;
     try {
       const r = await api.get(`/chat/title/${session.value.id}`);
       if (r.data?.code === 1 && r.data.data) session.value.title = r.data.data;
@@ -279,17 +284,17 @@ const streamChat = async (query: string) => {
         if (ev === 'message' && evt.answer) {
           appendAIChunk(currentMessageId.value!, evt.answer);
           scrollToBottom();
-          if(appStore.chat.activeSessionId === null){
-            appStore.chat.activeSessionId = evt.conversationId;
-            session.value.id = appStore.chat.activeSessionId;
+          if(session.value.id === null){
+            session.value.id = evt.conversationId;
+            chatList.value.unshift({
+              id: session.value.id as string,
+              title: session.value.title,
+              updatedAt: new Date().toISOString()
+            });
           }
         }
         else if (ev === 'messageEnd') {
           await finalizePair();
-          if(appStore.chat.activeSessionId === null){
-            appStore.chat.activeSessionId = evt.conversationId;
-            session.value.id = appStore.chat.activeSessionId;
-          }
         }
       }
     }
@@ -339,7 +344,10 @@ const getQuickPrompts = async () => {
 };
 // 新会话：首次消息发送前不加入 chatList，等首次 AI 回复结束后再 finalize 加入
 const createNewSession = async () => {
-  if (isStreaming.value) { ElMessage.warning('请先停止当前生成'); return; }
+  if (isStreaming.value) {
+    ElMessage.warning('请先停止当前生成');
+    return;
+  }
    appStore.chat.activeSessionId = null;
    session.value = {
      id: appStore.chat.activeSessionId,
