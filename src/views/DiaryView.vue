@@ -149,6 +149,7 @@ const handleSave = async () => {
       draft.image="";
       draft.tags=[];
       selectedFile.value = null; // 重置已选文件
+      selectedEmoji.value = "";
     }else {
       ElMessage.error("保存失败，请稍后再试");
       entrySaved.value = false;
