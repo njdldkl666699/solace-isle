@@ -40,43 +40,42 @@ const quickActions = computed(() => [
 ]);
 
 const summary = computed(() => appStore.dashboardSummary);
-const achievedAchievements = computed(() => summary.value.Achievements.filter(item => item.achievedAt));
-const unachievedAchievements = computed(() => summary.value.Achievements.filter(item => !item.achievedAt));
+const achievedAchievements = computed(() => summary.value.Achievements.filter((item) => item.achievedAt));
 
 const streakText = computed(() => `你已连续记录 ${summary.value.streakDays} 天`);
 
 const getCurrentMood = async () => {
-  try{
+  try {
     const response = await api.get("/dashboard/currentMood");
 
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       appStore.updateCurrentMood(response.data.data);
-    }else {
+    } else {
       ElMessage.error("无法获取当前情绪" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
-  }catch {
+  } catch {
     ElMessage.error("无法获取当前情绪，请检查网络连接");
   }
-}
+};
 
 const getWeeklyMoodTrend = async () => {
-  try{
-    const response = await api.get("/dashboard/recentTrack",{
+  try {
+    const response = await api.get("/dashboard/recentTrack", {
       params: {
-        days: 7
-      }
+        days: 7,
+      },
     });
 
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       appStore.updateWeeklyMoodTrend(response.data.data.moodTrend);
       appStore.updateStreakDays(response.data.data.consecutiveDays);
-    }else {
+    } else {
       ElMessage.error("无法获取情绪轨迹" + (response.data.msg ? `：${response.data.msg}` : ""));
     }
-  }catch {
+  } catch {
     ElMessage.error("无法获取情绪轨迹，请检查网络连接");
   }
-}
+};
 
 const getAchievements = async () => {
   try {
@@ -183,13 +182,6 @@ onMounted(() => {
                 <p class="time">{{ item.achievedAt }}</p>
               </div>
             </li>
-            <li v-for="item in unachievedAchievements" :key="item.name">
-              <span class="badge">{{ item.icon }}</span>
-              <div>
-                <p class="title">{{ item.name }}</p>
-                <p class="desc">{{ item.description }}</p>
-              </div>
-            </li>
           </ul>
         </article>
 
@@ -283,14 +275,14 @@ onMounted(() => {
 }
 
 .streak-tag {
-  margin-top:1.2rem;
+  margin-top: 1.2rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
   background: rgba(93, 130, 255, 0.22);
   color: #31436a;
   font-weight: 600;
   font-size: 0.9rem;
-  text-align: center;/*文字居中*/
+  text-align: center; /*文字居中*/
 }
 
 .grid {
@@ -301,7 +293,9 @@ onMounted(() => {
 }
 
 /* 保证子元素在网格中可压缩，避免内容撑破导致水平滚动条 */
-.grid > * { min-width: 0; }
+.grid > * {
+  min-width: 0;
+}
 
 .current-mood,
 .mood-chart,
@@ -459,13 +453,23 @@ h3 {
 
 /* 自定义滚动条（WebKit） */
 .achievements ul::-webkit-scrollbar,
-.reminders ul::-webkit-scrollbar { width: 6px; }
+.reminders ul::-webkit-scrollbar {
+  width: 6px;
+}
 .achievements ul::-webkit-scrollbar-track,
-.reminders ul::-webkit-scrollbar-track { background: rgba(93,130,255,0.08); border-radius: 8px; }
+.reminders ul::-webkit-scrollbar-track {
+  background: rgba(93, 130, 255, 0.08);
+  border-radius: 8px;
+}
 .achievements ul::-webkit-scrollbar-thumb,
-.reminders ul::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#7496ff,#5d82ff); border-radius: 8px; }
+.reminders ul::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7496ff, #5d82ff);
+  border-radius: 8px;
+}
 .achievements ul::-webkit-scrollbar-thumb:hover,
-.reminders ul::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg,#5d82ff,#4b72ef); }
+.reminders ul::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5d82ff, #4b72ef);
+}
 
 /* 非 WebKit 浏览器将回退系统默认滚动条 */
 

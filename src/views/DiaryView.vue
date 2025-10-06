@@ -29,7 +29,7 @@ const draft = reactive({
   moodEmoji: "",
   moodLabel: "",
   content: "",
-  image: "",//URL
+  image: "", //URL
   tags: [] as string[],
 });
 
@@ -88,7 +88,7 @@ const commitTag = () => {
 
 // 新增：键盘事件（回车提交）
 const handleTagKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') {
+  if (e.key === "Enter") {
     e.preventDefault();
     commitTag();
   }
@@ -96,7 +96,7 @@ const handleTagKeydown = (e: KeyboardEvent) => {
 
 // 新增：移除标签
 const removeSmartTag = (tag: string) => {
-  draft.tags = draft.tags.filter(t => t !== tag);
+  draft.tags = draft.tags.filter((t) => t !== tag);
 };
 
 // 生成智能标签保持不变
@@ -104,18 +104,20 @@ const getSmartTags = async () => {
   try {
     const response = await api.post("/diary/tags", { content: draft.content });
 
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       // 后端若返回数组或单个标签，做兼容
       const data = response.data.data;
       if (Array.isArray(data)) {
-        data.forEach((t: string) => { if (t && !draft.tags.includes(t)) draft.tags.push(t); });
-      } else if (typeof data === 'string') {
+        data.forEach((t: string) => {
+          if (t && !draft.tags.includes(t)) draft.tags.push(t);
+        });
+      } else if (typeof data === "string") {
         if (data && !draft.tags.includes(data)) draft.tags.push(data);
       }
-    }else {
+    } else {
       ElMessage.error("无法生成情绪标签");
     }
-  }catch (err: any){
+  } catch (err: any) {
     ElMessage.error("无法生成情绪标签");
   }
 };
@@ -139,22 +141,22 @@ const handleSave = async () => {
       tags: draft.tags,
     });
 
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       await getEntries(); // 保存成功后刷新列表
       ElMessage.success("已保存到你的私人日记");
       entrySaved.value = false;
-      draft.moodEmoji="";
-      draft.moodLabel="";
-      draft.content="";
-      draft.image="";
-      draft.tags=[];
+      draft.moodEmoji = "";
+      draft.moodLabel = "";
+      draft.content = "";
+      draft.image = "";
+      draft.tags = [];
       selectedFile.value = null; // 重置已选文件
       selectedEmoji.value = "";
     }else {
       ElMessage.error("保存失败，请稍后再试");
       entrySaved.value = false;
     }
-  }catch (err){
+  } catch (err) {
     ElMessage.error("保存失败，请稍后再试");
     entrySaved.value = false;
   }
@@ -166,7 +168,7 @@ const uploadFile = async (): Promise<string> => {
   formData.append("file", selectedFile.value);
   try {
     const res = await api.post("/common/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
+      headers: { "Content-Type": "multipart/form-data" },
     });
     if (res.data.code === 1) {
       return res.data.data as string;
@@ -187,7 +189,7 @@ const handleEmojiSelect = (emoji: string) => {
     draft.moodLabel = "";
   } else {
     selectedEmoji.value = emoji;
-    const found = appStore.diary.quickEmojis.find(e => e.emoji === emoji);
+    const found = appStore.diary.quickEmojis.find((e) => e.emoji === emoji);
     draft.moodEmoji = emoji;
     draft.moodLabel = found?.label || "";
   }
@@ -212,20 +214,21 @@ const handleFileChange = (event: Event) => {
 const getEntries = async () => {
   try {
     // 这里的 date 参数需要传入当前要查询的月份，格式为 YYYY-MM
-    const date = `${activeMonth.value.getFullYear()}-${String(activeMonth.value.getMonth() + 1).padStart(2, '0')}`;
-    const response = await api.get("/diary", { params: { date:  date} });
+    const date = `${activeMonth.value.getFullYear()}-${String(activeMonth.value.getMonth() + 1).padStart(2, "0")}`;
+    const response = await api.get("/diary", { params: { date: date } });
 
-    if(response.data.code === 1){
+    if (response.data.code === 1) {
       appStore.updateEntries(response.data.data);
-    }else {
+      console.log("appStore.diary.entries:", appStore.diary.entries);
+    } else {
       ElMessage.error("无法获取心灵日记");
     }
-  }catch (err: any){
+  } catch (err: any) {
     ElMessage.error("无法获取心灵日记");
   }
-}
+};
 
-watch(activeMonth,() => getEntries());
+watch(activeMonth, () => getEntries());
 
 onMounted(() => {
   getEntries();
@@ -240,7 +243,97 @@ const QUICK_EMOJI_LIMIT = 20; // 适度限制，避免过多撑坏布局
 
 // 简单表情面板数据（常用分类的一小部分）
 const emojiPalette = [
-  "😀","😃","😄","😁","😆","🥹","😂","🤣","😊","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥱","😤","😠","😡","😶","😐","😑","😯","😦","😧","😢","😭","😮","😲","🤯","😳","🥺","😨","😰","😥","😱","😓","🤗","🤔","🤤","😴","😪","🤢","🤮","🤧","😷","🤒","🤕","🫡","🤠","😇","🤫","🤭","🫢","🫣","🤥","😈","👿","💀","☠️","👻","👽","👾","🤖","🎃"
+  "😀",
+  "😃",
+  "😄",
+  "😁",
+  "😆",
+  "🥹",
+  "😂",
+  "🤣",
+  "😊",
+  "🙂",
+  "🙃",
+  "😉",
+  "😌",
+  "😍",
+  "🥰",
+  "😘",
+  "😗",
+  "😙",
+  "😚",
+  "😋",
+  "😛",
+  "😝",
+  "😜",
+  "🤪",
+  "🤨",
+  "🧐",
+  "🤓",
+  "😎",
+  "🥳",
+  "😏",
+  "😒",
+  "😞",
+  "😔",
+  "😟",
+  "😕",
+  "🙁",
+  "☹️",
+  "😣",
+  "😖",
+  "😫",
+  "😩",
+  "🥱",
+  "😤",
+  "😠",
+  "😡",
+  "😶",
+  "😐",
+  "😑",
+  "😯",
+  "😦",
+  "😧",
+  "😢",
+  "😭",
+  "😮",
+  "😲",
+  "🤯",
+  "😳",
+  "🥺",
+  "😨",
+  "😰",
+  "😥",
+  "😱",
+  "😓",
+  "🤗",
+  "🤔",
+  "🤤",
+  "😴",
+  "😪",
+  "🤢",
+  "🤮",
+  "🤧",
+  "😷",
+  "🤒",
+  "🤕",
+  "🫡",
+  "🤠",
+  "😇",
+  "🤫",
+  "🤭",
+  "🫢",
+  "🫣",
+  "🤥",
+  "😈",
+  "👿",
+  "💀",
+  "☠️",
+  "👻",
+  "👽",
+  "👾",
+  "🤖",
+  "🎃",
 ];
 
 const openManageDialog = () => {
@@ -317,7 +410,7 @@ const dayEntry = ref<DiaryEntry | null>(null);
 
 const openDayEntry = (date: Date) => {
   const key = formatLocalDate(date);
-  const entry = entries.value.find(e => e.date === key) || null;
+  const entry = entries.value.find((e) => e.date === key) || null;
   if (entry) {
     dayEntry.value = entry;
     dayEntryDialogVisible.value = true;
@@ -390,7 +483,6 @@ const closeDayEntry = () => {
               <input type="file" accept="image/*" @change="handleFileChange" />
             </label>
           </div>
-          <p v-if="selectedFile" class="file-name">{{ selectedFile.name }}</p>
 
           <div class="save-row">
             <p v-if="entrySaved" class="hint">已保存到你的私人日记。</p>
@@ -404,8 +496,12 @@ const closeDayEntry = () => {
         <div class="history-header">
           <h3>历史回顾</h3>
           <div class="view-switch">
-            <button type="button" :class="{ active: historyView === 'list' }" @click="historyView = 'list'">列表</button>
-            <button type="button" :class="{ active: historyView === 'calendar' }" @click="historyView = 'calendar'">日历</button>
+            <button type="button" :class="{ active: historyView === 'list' }" @click="historyView = 'list'">
+              列表
+            </button>
+            <button type="button" :class="{ active: historyView === 'calendar' }" @click="historyView = 'calendar'">
+              日历
+            </button>
           </div>
         </div>
         <div class="calendar-nav">
@@ -431,7 +527,9 @@ const closeDayEntry = () => {
         </div>
         <div v-else class="calendar-view">
           <div class="calendar-grid">
-            <span class="weekday" v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day">周{{ day }}</span>
+            <span class="weekday" v-for="day in ['一', '二', '三', '四', '五', '六', '日']" :key="day"
+              >周{{ day }}</span
+            >
             <div
               v-for="item in monthInfo.days"
               :key="item.key"
@@ -472,18 +570,28 @@ const closeDayEntry = () => {
       <p class="section-label">新增表情</p>
       <div class="row">
         <div class="emoji-picker-field">
-          <input class="emoji-display" v-model="newEmoji" placeholder="表情" @input="sanitizeEmojiInput" @click="emojiPaletteVisible = !emojiPaletteVisible" />
+          <input
+            class="emoji-display"
+            v-model="newEmoji"
+            placeholder="表情"
+            @input="sanitizeEmojiInput"
+            @click="emojiPaletteVisible = !emojiPaletteVisible"
+          />
           <button type="button" class="toggle-emoji" @click="emojiPaletteVisible = !emojiPaletteVisible">选择</button>
           <div v-if="emojiPaletteVisible" class="emoji-palette" @click.stop>
             <div class="palette-grid">
-              <button type="button" v-for="emo in emojiPalette" :key="emo" @click="selectPaletteEmoji(emo)">{{ emo }}</button>
+              <button type="button" v-for="emo in emojiPalette" :key="emo" @click="selectPaletteEmoji(emo)">
+                {{ emo }}
+              </button>
             </div>
           </div>
         </div>
         <input class="label-input" v-model="newLabel" maxlength="6" placeholder="标签(<=6)" />
         <button type="button" class="add-btn" @click="addQuickEmoji">添加</button>
       </div>
-      <small class="hint-line">上限 {{ QUICK_EMOJI_LIMIT }} 个；点击上方已有表情即可删除；可直接输入或使用“选择”面板。</small>
+      <small class="hint-line"
+        >上限 {{ QUICK_EMOJI_LIMIT }} 个；点击上方已有表情即可删除；可直接输入或使用“选择”面板。</small
+      >
     </div>
 
     <template #footer>
@@ -492,7 +600,12 @@ const closeDayEntry = () => {
   </el-dialog>
 
   <!-- 日记内容查看对话框 -->
-  <el-dialog v-model="dayEntryDialogVisible" width="600px" class="day-entry-dialog" :title="dayEntry ? dayEntry.date + ' 的日记' : '日记'">
+  <el-dialog
+    v-model="dayEntryDialogVisible"
+    width="600px"
+    class="day-entry-dialog"
+    :title="dayEntry ? dayEntry.date + ' 的日记' : '日记'"
+  >
     <div v-if="dayEntry" class="day-entry-body">
       <div class="header-line">
         <span class="emoji">{{ dayEntry.moodEmoji }}</span>
@@ -534,7 +647,7 @@ const closeDayEntry = () => {
   padding: 0.9rem 1rem;
   line-height: 1.5;
   font: inherit;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(93, 130, 255, 0.28);
   border-radius: 18px;
   color: #2f3a60;
@@ -543,7 +656,7 @@ const closeDayEntry = () => {
 .text-entry textarea:focus {
   outline: none;
   border-color: #5d82ff;
-  box-shadow: 0 0 0 3px rgba(93,130,255,0.18);
+  box-shadow: 0 0 0 3px rgba(93, 130, 255, 0.18);
 }
 
 .record-panel,
@@ -599,22 +712,117 @@ const closeDayEntry = () => {
   font-size: 1.6rem;
 }
 
-.tag-area { display: flex; flex-direction: column; gap: .5rem; }
-.tag-header { display: flex; align-items: center; justify-content: space-between; }
-.tag-header .label { font-size: .9rem; font-weight: 600; color:#4a5d8a; }
-.gen-btn { border:1px solid rgba(93,130,255,.4); background:rgba(255,255,255,.85); color:#4a5d8a; padding:.35rem .9rem; border-radius:14px; font-size:.75rem; font-weight:600; cursor:pointer; transition:background .2s, box-shadow .2s; }
-.gen-btn:hover { background:#fff; box-shadow:0 4px 10px rgba(93,130,255,.18); }
+.tag-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tag-header .label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5d8a;
+}
+.gen-btn {
+  border: 1px solid rgba(93, 130, 255, 0.4);
+  background: rgba(255, 255, 255, 0.85);
+  color: #4a5d8a;
+  padding: 0.35rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.gen-btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(93, 130, 255, 0.18);
+}
 
-.tag-input-wrapper { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.55rem .7rem; min-height:54px; border:1px solid rgba(93,130,255,.28); background:rgba(255,255,255,.9); border-radius:18px; cursor:text; }
-.tag-item { position:relative; display:inline-flex; align-items:center; gap:.25rem; padding:.35rem .85rem .35rem .7rem; font-size:.75rem; font-weight:600; background:linear-gradient(135deg,#eef3ff,#f8faff); color:#486098; border:1px solid rgba(93,130,255,.35); border-radius:999px; line-height:1; cursor:pointer; transition:background .2s, border-color .2s, transform .15s; }
-.tag-item.selected { background:rgba(93,130,255,.18); border-color:rgba(93,130,255,.6); }
-.tag-item:hover { border-color:rgba(93,130,255,.55); }
-.tag-item .hash { opacity:.6; }
-.remove-tag { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border:none; background:#fff; color:#5d74a7; font-size:12px; font-weight:600; border-radius:50%; box-shadow:0 2px 6px rgba(93,130,255,.35); cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
-.remove-tag:hover { background:#5d82ff; color:#fff; }
-.tag-text-input { flex:1; min-width:120px; border:none; outline:none; background:transparent; padding:.35rem .2rem; font:inherit; color:#2f3a60; }
-.tag-text-input::placeholder { color:#8fa0c3; font-size:.75rem; }
-.tag-hint { font-size:.65rem; color:#6b7aa6; }
+.tag-input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  min-height: 54px;
+  border: 1px solid rgba(93, 130, 255, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
+  cursor: text;
+}
+.tag-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #eef3ff, #f8faff);
+  color: #486098;
+  border: 1px solid rgba(93, 130, 255, 0.35);
+  border-radius: 999px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.tag-item.selected {
+  background: rgba(93, 130, 255, 0.18);
+  border-color: rgba(93, 130, 255, 0.6);
+}
+.tag-item:hover {
+  border-color: rgba(93, 130, 255, 0.55);
+}
+.tag-item .hash {
+  opacity: 0.6;
+}
+.remove-tag {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: #fff;
+  color: #5d74a7;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(93, 130, 255, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+.remove-tag:hover {
+  background: #5d82ff;
+  color: #fff;
+}
+.tag-text-input {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.35rem 0.2rem;
+  font: inherit;
+  color: #2f3a60;
+}
+.tag-text-input::placeholder {
+  color: #8fa0c3;
+  font-size: 0.75rem;
+}
+.tag-hint {
+  font-size: 0.65rem;
+  color: #6b7aa6;
+}
 
 .attachments {
   display: flex;
@@ -642,27 +850,27 @@ const closeDayEntry = () => {
 /* 自定义文件选择按钮为圆角胶囊 */
 .attachments input[type="file"]::file-selector-button,
 .attachments input[type="file"]::-webkit-file-upload-button {
-  margin-right: .9rem;
-  background: linear-gradient(135deg,#5d82ff,#8fa3ff);
+  margin-right: 0.9rem;
+  background: linear-gradient(135deg, #5d82ff, #8fa3ff);
   color: #fff;
   border: 1px solid #5d82ff;
-  padding: .5rem 1.2rem;
+  padding: 0.5rem 1.2rem;
   border-radius: 999px;
   font-weight: 600;
-  font-size: .8rem;
-  letter-spacing: .5px;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: background .2s ease, box-shadow .2s ease, transform .15s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .attachments input[type="file"]::file-selector-button:hover,
 .attachments input[type="file"]::-webkit-file-upload-button:hover {
-  background: linear-gradient(135deg,#5477ee,#7d97f5);
-  box-shadow: 0 6px 16px -4px rgba(93,130,255,.45);
+  background: linear-gradient(135deg, #5477ee, #7d97f5);
+  box-shadow: 0 6px 16px -4px rgba(93, 130, 255, 0.45);
 }
 .attachments input[type="file"]::file-selector-button:active,
 .attachments input[type="file"]::-webkit-file-upload-button:active {
   transform: translateY(1px);
-  box-shadow: 0 3px 10px -3px rgba(93,130,255,.4);
+  box-shadow: 0 3px 10px -3px rgba(93, 130, 255, 0.4);
 }
 .attachments input[type="file"]:focus-visible::file-selector-button {
   outline: 2px solid #5d82ff;
@@ -672,7 +880,7 @@ const closeDayEntry = () => {
 @media (prefers-color-scheme: dark) {
   .attachments input[type="file"]::file-selector-button,
   .attachments input[type="file"]::-webkit-file-upload-button {
-    background: linear-gradient(135deg,#6b8dff,#9fb6ff);
+    background: linear-gradient(135deg, #6b8dff, #9fb6ff);
     border-color: #6b8dff;
   }
 }
@@ -698,16 +906,17 @@ const closeDayEntry = () => {
 .save-row {
   display: flex;
   flex-direction: column; /* 改为纵向堆叠 */
-  align-items: center;    /* 水平居中 */
-  gap: 0.6rem;            /* 间距缩小以适配纵向布局 */
+  align-items: center; /* 水平居中 */
+  gap: 0.6rem; /* 间距缩小以适配纵向布局 */
   justify-content: center;
 }
 
 .save-row .hint {
-  margin: 0;              /* 移除自动推开布局 */
+  margin: 0; /* 移除自动推开布局 */
 }
 
-.file-name { /* 还原文件名样式，避免空规则警告 */
+.file-name {
+  /* 还原文件名样式，避免空规则警告 */
   margin-top: 0.25rem;
   font-size: 0.75rem;
   color: #5c6b93;
@@ -755,12 +964,13 @@ const closeDayEntry = () => {
   gap: 0.9rem;
 }
 
-.entry-card header.entry-header { /* 让 emoji 固定左上，其余内容在右侧 */
+.entry-card header.entry-header {
+  /* 让 emoji 固定左上，其余内容在右侧 */
   display: grid;
   grid-template-columns: auto 1fr auto; /* emoji | meta | tags */
   align-items: start;
   column-gap: 1rem;
-  row-gap: .35rem;
+  row-gap: 0.35rem;
   padding: 0; /* 保持紧凑 */
 }
 .entry-card header.entry-header .emoji {
@@ -775,7 +985,7 @@ const closeDayEntry = () => {
   grid-row: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: .65rem;
+  gap: 0.65rem;
   align-items: baseline;
   min-width: 0;
 }
@@ -784,14 +994,16 @@ const closeDayEntry = () => {
   grid-row: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: .4rem;
+  gap: 0.4rem;
   justify-content: flex-end;
 }
 /* 移除旧 header 内部图片，改为 header 下单独一行 */
-.entry-card header img { display: none; }
+.entry-card header img {
+  display: none;
+}
 .entry-card > img.entry-image {
   /* 居中显示：左右 auto */
-  margin: .1rem auto 0; /* 顶部 0.1rem，水平居中 */
+  margin: 0.1rem auto 0; /* 顶部 0.1rem，水平居中 */
   display: block;
   max-width: 500px;
   max-height: 500px;
@@ -800,7 +1012,7 @@ const closeDayEntry = () => {
   border-radius: 14px;
   object-fit: contain;
   background: #f2f5fa;
-  box-shadow: 0 4px 12px rgba(93,130,255,0.12);
+  box-shadow: 0 4px 12px rgba(93, 130, 255, 0.12);
 }
 
 .entry-card .emoji {
@@ -884,8 +1096,14 @@ const closeDayEntry = () => {
   opacity: 0.35;
 }
 
-.day.has-entry { cursor: pointer; border-color: rgba(93,130,255,0.28); box-shadow: 0 4px 10px rgba(93,130,255,0.18); }
-.day.has-entry:hover { background: #fff; }
+.day.has-entry {
+  cursor: pointer;
+  border-color: rgba(93, 130, 255, 0.28);
+  box-shadow: 0 4px 10px rgba(93, 130, 255, 0.18);
+}
+.day.has-entry:hover {
+  background: #fff;
+}
 
 .day .date {
   font-weight: 600;
@@ -904,19 +1122,19 @@ const closeDayEntry = () => {
   resize: vertical; /* 仅允许上下方向 */
   overflow: auto; /* 保持内容可滚动 */
   padding: 0.9rem 1rem;
-  line-height: 1.5;/*良好的行高，提升可读性*/
-  border: 1px solid rgba(93,130,255,0.28);
-  border-radius: 18px;/*设置圆角*/
-  background: rgba(255,255,255,0.92);
-  font: inherit;/*继承字体样式*/
+  line-height: 1.5; /*良好的行高，提升可读性*/
+  border: 1px solid rgba(93, 130, 255, 0.28);
+  border-radius: 18px; /*设置圆角*/
+  background: rgba(255, 255, 255, 0.92);
+  font: inherit; /*继承字体样式*/
   color: #2f3a60;
 }
 
 /*聚焦样式状态*/
 .text-entry textarea:focus {
-  outline: none;/*移除默认的轮廓线*/
+  outline: none; /*移除默认的轮廓线*/
   border-color: #5d82ff;
-  box-shadow: 0 0 0 3px rgba(93,130,255,0.18);
+  box-shadow: 0 0 0 3px rgba(93, 130, 255, 0.18);
 }
 
 @media (max-width: 1080px) {
@@ -940,48 +1158,209 @@ const closeDayEntry = () => {
   }
 }
 
-.title-row { display: flex; align-items: center; justify-content: space-between; }
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .manage-btn {
-  border: 1px solid rgba(93,130,255,0.35);
-  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(93, 130, 255, 0.35);
+  background: rgba(255, 255, 255, 0.7);
   padding: 0.35rem 0.8rem;
   border-radius: 12px;
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
-  transition: background .2s;
+  transition: background 0.2s;
 }
-.manage-btn:hover { background: #fff; }
-.quick-emoji-dialog :deep(.el-dialog__body){ padding-top: 0.5rem; }
-.current-emojis { margin-bottom: 1rem; }
-.section-label { margin: 0 0 .4rem; font-size: .85rem; color: #5c6b93; font-weight: 600; }
-.emoji-grid { display: flex; flex-wrap: wrap; gap: .6rem; }
-.emoji-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: .25rem; padding: .55rem .55rem .4rem; background: #f4f7ff; border: 1px solid rgba(93,130,255,.18); border-radius: 14px; cursor: pointer; min-width: 64px; }
-.emoji-item:hover { background: #fff; box-shadow: 0 4px 12px rgba(93,130,255,.18); }
-.emoji-item .emo { font-size: 1.4rem; }
-.emoji-item .lbl { font-size: .7rem; color: #4a5d8a; font-weight: 600; }
-.emoji-item .del-hint { position: absolute; top: 2px; right: 6px; font-size: .85rem; color: #8b98b8; }
-.add-form .row { display: flex; align-items: stretch; gap: .6rem; flex-wrap: wrap; }
-.emoji-picker-field { position: relative; display: flex; align-items: center; }
-.emoji-display { width: 80px; text-align: center; font-size:0.9rem; border: 1px solid rgba(93,130,255,.35); border-radius: 12px; background: #fff; padding: .4rem .5rem; cursor: pointer; }
-.toggle-emoji { margin-left: .4rem; border: none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.45rem .8rem; border-radius:12px; cursor: pointer; font-size:.75rem; font-weight:600; }
-.emoji-palette { position: absolute; left: 0; top: 105%; z-index: 30; width: 320px; max-height: 260px; overflow: auto; background: #fff; border: 1px solid rgba(93,130,255,.3); border-radius: 18px; box-shadow: 0 12px 28px rgba(93,130,255,.25); padding: .6rem; }
-.palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: .35rem; }
-.palette-grid button { border: none; background: #f3f6ff; border-radius: 10px; padding: .35rem 0; font-size: 1.1rem; cursor: pointer; transition: background .15s; }
-.palette-grid button:hover { background: #e2eaff; }
-.label-input { width: 120px; border:1px solid rgba(93,130,255,.35); border-radius:12px; padding:.45rem .7rem; font: inherit; }
-.add-btn { border:none; background: linear-gradient(135deg,#5d82ff,#8fa3ff); color:#fff; padding:.55rem 1.1rem; border-radius:14px; font-weight:600; cursor:pointer; box-shadow:0 6px 14px rgba(93,130,255,.25); }
-.add-btn:hover { box-shadow:0 8px 18px rgba(93,130,255,.3); }
-.hint-line { display:block; margin-top:.45rem; font-size:0.8rem; color:#6b7aa6; }
-.empty { font-size:.75rem; color:#6b7aa6; }
+.manage-btn:hover {
+  background: #fff;
+}
+.quick-emoji-dialog :deep(.el-dialog__body) {
+  padding-top: 0.5rem;
+}
+.current-emojis {
+  margin-bottom: 1rem;
+}
+.section-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #5c6b93;
+  font-weight: 600;
+}
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.emoji-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.55rem 0.55rem 0.4rem;
+  background: #f4f7ff;
+  border: 1px solid rgba(93, 130, 255, 0.18);
+  border-radius: 14px;
+  cursor: pointer;
+  min-width: 64px;
+}
+.emoji-item:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(93, 130, 255, 0.18);
+}
+.emoji-item .emo {
+  font-size: 1.4rem;
+}
+.emoji-item .lbl {
+  font-size: 0.7rem;
+  color: #4a5d8a;
+  font-weight: 600;
+}
+.emoji-item .del-hint {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: 0.85rem;
+  color: #8b98b8;
+}
+.add-form .row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.emoji-picker-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.emoji-display {
+  width: 80px;
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid rgba(93, 130, 255, 0.35);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+}
+.toggle-emoji {
+  margin-left: 0.4rem;
+  border: none;
+  background: linear-gradient(135deg, #5d82ff, #8fa3ff);
+  color: #fff;
+  padding: 0.45rem 0.8rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.emoji-palette {
+  position: absolute;
+  left: 0;
+  top: 105%;
+  z-index: 30;
+  width: 320px;
+  max-height: 260px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid rgba(93, 130, 255, 0.3);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(93, 130, 255, 0.25);
+  padding: 0.6rem;
+}
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: 0.35rem;
+}
+.palette-grid button {
+  border: none;
+  background: #f3f6ff;
+  border-radius: 10px;
+  padding: 0.35rem 0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.palette-grid button:hover {
+  background: #e2eaff;
+}
+.label-input {
+  width: 120px;
+  border: 1px solid rgba(93, 130, 255, 0.35);
+  border-radius: 12px;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+}
+.add-btn {
+  border: none;
+  background: linear-gradient(135deg, #5d82ff, #8fa3ff);
+  color: #fff;
+  padding: 0.55rem 1.1rem;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(93, 130, 255, 0.25);
+}
+.add-btn:hover {
+  box-shadow: 0 8px 18px rgba(93, 130, 255, 0.3);
+}
+.hint-line {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: #6b7aa6;
+}
+.empty {
+  font-size: 0.75rem;
+  color: #6b7aa6;
+}
 
-.day-entry-dialog :deep(.el-dialog__body){ padding-top: .75rem; }
-.day-entry-body { display:flex; flex-direction:column; gap:.9rem; }
-.day-entry-body .header-line { display:flex; align-items:center; gap:.9rem; }
-.day-entry-body .emoji { font-size:2rem; }
-.day-entry-body .mood-label { margin:0; font-weight:600; color:#2f3a60; }
-.day-entry-body .tags { display:flex; flex-wrap:wrap; gap:.4rem; }
-.day-entry-body .tags .tag { background:rgba(93,130,255,.14); padding:.25rem .55rem; border-radius:999px; font-size:.7rem; color:#4a5d8a; }
-.day-entry-body .content { white-space:pre-wrap; line-height:1.55; margin:0; color:#2f3a60; }
-.day-entry-body .preview { max-width:100%; border-radius:16px; box-shadow:0 6px 18px rgba(93,130,255,.15); }
+.day-entry-dialog :deep(.el-dialog__body) {
+  padding-top: 0.75rem;
+}
+.day-entry-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.day-entry-body .header-line {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.day-entry-body .emoji {
+  font-size: 2rem;
+}
+.day-entry-body .mood-label {
+  margin: 0;
+  font-weight: 600;
+  color: #2f3a60;
+}
+.day-entry-body .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.day-entry-body .tags .tag {
+  background: rgba(93, 130, 255, 0.14);
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: #4a5d8a;
+}
+.day-entry-body .content {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  margin: 0;
+  color: #2f3a60;
+}
+.day-entry-body .preview {
+  max-width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(93, 130, 255, 0.15);
+}
 </style>

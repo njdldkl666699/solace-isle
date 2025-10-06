@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch, onUnmounted} from "vue";
+import { computed, onMounted, reactive, ref, watch, onUnmounted } from "vue";
 import AppShell from "../components/layout/AppShell.vue";
 import { useAppStore } from "../stores/appStore";
 import api from "../api/request.ts";
-import {ElMessage} from "element-plus";
-import { sha256 } from 'js-sha256';
+import { ElMessage } from "element-plus";
+import { sha256 } from "js-sha256";
 
 const appStore = useAppStore();
-const achievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => item.achievedAt));
-const unachievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter(item => !item.achievedAt));
+const achievedAchievements = computed(() => appStore.dashboardSummary.Achievements.filter((item) => item.achievedAt));
+const unachievedAchievements = computed(() =>
+  appStore.dashboardSummary.Achievements.filter((item) => !item.achievedAt)
+);
 
 const settings = reactive({
   shareAggregated: false,
@@ -19,24 +21,24 @@ const settings = reactive({
 // ---------------- 编辑资料对话框状态 ----------------
 const editDialogVisible = ref(false);
 const profileForm = reactive({
-  avatar: '',
-  nickname: '',
-  motto: '',
-  studentId: '',
-  email: '',
+  avatar: "",
+  nickname: "",
+  motto: "",
+  studentId: "",
+  email: "",
 });
-let originalProfileSnapshot = { avatar: '', nickname: '', motto: '' };
+let originalProfileSnapshot = { avatar: "", nickname: "", motto: "" };
 
 const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: '',
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
   loading: false,
 });
 
 const emailForm = reactive({
-  email: '',
-  code: '',
+  email: "",
+  code: "",
   sending: false,
   countdown: 0,
   updating: false,
@@ -60,10 +62,10 @@ const openEditDialog = () => {
 const closeEditDialog = () => {
   editDialogVisible.value = false;
   // 重置敏感表单
-  passwordForm.oldPassword = '';
-  passwordForm.newPassword = '';
-  passwordForm.confirmPassword = '';
-  emailForm.code = '';
+  passwordForm.oldPassword = "";
+  passwordForm.newPassword = "";
+  passwordForm.confirmPassword = "";
+  emailForm.code = "";
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
@@ -75,8 +77,10 @@ const closeEditDialog = () => {
 const buildProfilePayload = () => {
   const payload: Record<string, string> = {};
   if (profileForm.avatar && profileForm.avatar !== originalProfileSnapshot.avatar) payload.avatar = profileForm.avatar;
-  if (profileForm.nickname && profileForm.nickname !== originalProfileSnapshot.nickname) payload.nickname = profileForm.nickname;
-  if (profileForm.motto !== undefined && profileForm.motto !== originalProfileSnapshot.motto) payload.motto = profileForm.motto;
+  if (profileForm.nickname && profileForm.nickname !== originalProfileSnapshot.nickname)
+    payload.nickname = profileForm.nickname;
+  if (profileForm.motto !== undefined && profileForm.motto !== originalProfileSnapshot.motto)
+    payload.motto = profileForm.motto;
   return payload;
 };
 
@@ -89,7 +93,7 @@ const submitProfile = async () => {
   }
   submittingProfile.value = true;
   try {
-    const response = await api.put('/user/profile', payload);
+    const response = await api.put("/user/profile", payload);
     if (response.data.code === 1) {
       // 合并更新到 store
       appStore.updateUser({
@@ -104,13 +108,13 @@ const submitProfile = async () => {
         nickname: appStore.user.nickname,
         motto: appStore.user.motto,
       };
-      ElMessage.success('基本信息已更新');
+      ElMessage.success("基本信息已更新");
       closeEditDialog();
     } else {
-      ElMessage.error(response.data.message || '更新失败');
+      ElMessage.error(response.data.message || "更新失败");
     }
   } catch (e) {
-    ElMessage.error('网络错误，更新失败');
+    ElMessage.error("网络错误，更新失败");
   } finally {
     submittingProfile.value = false;
   }
@@ -122,63 +126,64 @@ const handleAvatarFile = async (e: Event) => {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    ElMessage.error('请选择图片文件');
+  if (!file.type.startsWith("image/")) {
+    ElMessage.error("请选择图片文件");
     return;
   }
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
   uploadingAvatar.value = true;
   try {
-    const response = await api.post('/common/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const response = await api.post("/common/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
     if (response.data.code === 1) {
       profileForm.avatar = response.data.data;
-      ElMessage.success('头像上传成功');
+      ElMessage.success("头像上传成功");
     } else {
-      ElMessage.error(response.data.message || '头像上传失败');
+      ElMessage.error(response.data.message || "头像上传失败");
     }
   } catch {
-    ElMessage.error('头像上传失败');
+    ElMessage.error("头像上传失败");
   } finally {
     uploadingAvatar.value = false;
-    input.value = '';
+    input.value = "";
   }
 };
 
 // 修改密码
 const updatePassword = async () => {
   if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-    ElMessage.warning('请填写完整的密码信息');
+    ElMessage.warning("请填写完整的密码信息");
     return;
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.error('两次输入的新密码不一致');
+    ElMessage.error("两次输入的新密码不一致");
     return;
   }
   if (passwordForm.newPassword === passwordForm.oldPassword) {
-    ElMessage.warning('新旧密码不能相同');
+    ElMessage.warning("新旧密码不能相同");
     return;
   }
   passwordForm.loading = true;
   try {
     const oldHash = await sha256(passwordForm.oldPassword);
     const newHash = await sha256(passwordForm.newPassword);
-    const response = await api.put('/user/profile/updatePassword', {
+    const response = await api.put("/user/profile/updatePassword", {
       oldPassword: oldHash,
       newPassword: newHash,
     });
     if (response.data.code === 1) {
-      ElMessage.success('密码已更新');
-      passwordForm.oldPassword = '';
-      passwordForm.newPassword = '';
-      passwordForm.confirmPassword = '';
+      ElMessage.success("密码已更新, 请使用新密码重新登录");
+      passwordForm.oldPassword = "";
+      passwordForm.newPassword = "";
+      passwordForm.confirmPassword = "";
+      appStore.logout();
     } else {
-      ElMessage.error(response.data.msg || '密码更新失败');
+      ElMessage.error(response.data.msg || "密码更新失败");
     }
   } catch {
-    ElMessage.error('网络错误，密码更新失败');
+    ElMessage.error("网络错误，密码更新失败");
   } finally {
     passwordForm.loading = false;
   }
@@ -189,23 +194,23 @@ const validateEmailFormat = (email: string) => /\S+@\S+\.\S+/.test(email);
 
 const sendEmailCode = async () => {
   if (!emailForm.email) {
-    ElMessage.warning('请输入新邮箱');
+    ElMessage.warning("请输入新邮箱");
     return;
   }
   if (!validateEmailFormat(emailForm.email)) {
-    ElMessage.error('邮箱格式不正确');
+    ElMessage.error("邮箱格式不正确");
     return;
   }
   if (emailForm.email === appStore.user.email) {
-    ElMessage.info('新邮箱与当前邮箱相同');
+    ElMessage.warning("新邮箱与当前邮箱相同");
     return;
   }
   if (emailForm.countdown > 0) return;
   emailForm.sending = true;
   try {
-    const response = await api.get('/auth/sendCode', { params: { email: emailForm.email } });
+    const response = await api.get("/auth/sendCode", { params: { email: emailForm.email } });
     if (response.data.code === 1) {
-      ElMessage.success('验证码已发送');
+      ElMessage.success("验证码已发送");
       emailForm.countdown = 60;
       countdownTimer = window.setInterval(() => {
         if (emailForm.countdown <= 1) {
@@ -217,10 +222,10 @@ const sendEmailCode = async () => {
         }
       }, 1000);
     } else {
-      ElMessage.error(response.data.msg || '验证码发送失败');
+      ElMessage.error(response.data.msg || "验证码发送失败");
     }
   } catch {
-    ElMessage.error('验证码发送失败');
+    ElMessage.error("验证码发送失败");
   } finally {
     emailForm.sending = false;
   }
@@ -229,21 +234,21 @@ const sendEmailCode = async () => {
 // 更新邮箱
 const updateEmail = async () => {
   if (!emailForm.email || !emailForm.code) {
-    ElMessage.warning('请填写新邮箱和验证码');
+    ElMessage.warning("请填写新邮箱和验证码");
     return;
   }
   if (!validateEmailFormat(emailForm.email)) {
-    ElMessage.error('邮箱格式不正确');
+    ElMessage.error("邮箱格式不正确");
     return;
   }
   emailForm.updating = true;
   try {
-    const response = await api.put('/user/profile/updateEmail', {
+    const response = await api.put("/user/profile/updateEmail", {
       email: emailForm.email,
       code: emailForm.code,
     });
     if (response.data.code === 1) {
-      ElMessage.success('邮箱已更新');
+      ElMessage.success("邮箱已更新");
       appStore.updateUser({
         nickname: appStore.user.nickname,
         studentId: appStore.user.studentId,
@@ -252,12 +257,12 @@ const updateEmail = async () => {
         motto: appStore.user.motto,
       });
       profileForm.email = emailForm.email;
-      emailForm.code = '';
+      emailForm.code = "";
     } else {
-      ElMessage.error(response.data.msg || '邮箱更新失败');
+      ElMessage.error(response.data.msg || "邮箱更新失败");
     }
   } catch {
-    ElMessage.error('网络错误，邮箱更新失败');
+    ElMessage.error("网络错误，邮箱更新失败");
   } finally {
     emailForm.updating = false;
   }
@@ -291,7 +296,7 @@ const getSettings = async () => {
   } catch {
     ElMessage.error("无法获取习惯设置信息");
   }
-}
+};
 
 const updateSettings = async () => {
   try {
@@ -309,7 +314,7 @@ const updateSettings = async () => {
     ElMessage.error("无法更新习惯设置信息");
     await getSettings();
   }
-}
+};
 
 watch(settings, updateSettings, { deep: true });
 
@@ -439,7 +444,9 @@ onUnmounted(() => {
               <input value="********" disabled />
             </div>
             <div class="actions">
-              <button class="primary" :disabled="submittingProfile" @click="submitProfile">{{ submittingProfile ? '保存中…' : '保存修改' }}</button>
+              <button class="primary" :disabled="submittingProfile" @click="submitProfile">
+                {{ submittingProfile ? "保存中…" : "保存修改" }}
+              </button>
               <button class="ghost" @click="closeEditDialog">取消</button>
             </div>
           </section>
@@ -458,7 +465,9 @@ onUnmounted(() => {
               <input v-model="passwordForm.confirmPassword" type="password" placeholder="再次输入新密码" />
             </div>
             <div class="actions">
-              <button class="primary" :disabled="passwordForm.loading" @click="updatePassword">{{ passwordForm.loading ? '提交中…' : '更新密码' }}</button>
+              <button class="primary" :disabled="passwordForm.loading" @click="updatePassword">
+                {{ passwordForm.loading ? "提交中…" : "更新密码" }}
+              </button>
             </div>
           </section>
           <section class="block">
@@ -471,14 +480,20 @@ onUnmounted(() => {
               <label>验证码</label>
               <div class="code-input-group">
                 <input v-model="emailForm.code" type="text" placeholder="输入验证码" />
-                <button class="ghost small" :disabled="emailForm.sending || emailForm.countdown>0" @click="sendEmailCode">
-                  <span v-if="emailForm.countdown===0">{{ emailForm.sending ? '发送中…' : '发送验证码' }}</span>
+                <button
+                  class="ghost small"
+                  :disabled="emailForm.sending || emailForm.countdown > 0"
+                  @click="sendEmailCode"
+                >
+                  <span v-if="emailForm.countdown === 0">{{ emailForm.sending ? "发送中…" : "发送验证码" }}</span>
                   <span v-else>{{ emailForm.countdown }}秒后可重新发送</span>
                 </button>
               </div>
             </div>
             <div class="actions">
-              <button class="primary" :disabled="emailForm.updating" @click="updateEmail">{{ emailForm.updating ? '更新中…' : '更新邮箱' }}</button>
+              <button class="primary" :disabled="emailForm.updating" @click="updateEmail">
+                {{ emailForm.updating ? "更新中…" : "更新邮箱" }}
+              </button>
             </div>
           </section>
         </div>
@@ -549,17 +564,26 @@ onUnmounted(() => {
   border-radius: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
 .hero-card .logout-btn:hover {
   background: #e2e8ee;
   color: #5d6b78;
   border-color: #c5ced6;
-  box-shadow: 0 4px 10px -4px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.08);
 }
-.hero-card .logout-btn:active { box-shadow: none; }
-.hero-card .hero-actions { display: flex; flex-direction: column; gap: .65rem; align-items: flex-end; }
-.hero-card .hero-actions button { width: 100%; }
+.hero-card .logout-btn:active {
+  box-shadow: none;
+}
+.hero-card .hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: flex-end;
+}
+.hero-card .hero-actions button {
+  width: 100%;
+}
 
 .settings,
 .achievements {
@@ -680,10 +704,10 @@ h4 {
   /* layout */
   display: inline-flex;
   align-items: center;
-  gap: .35rem;
-  padding: .36rem .78rem .42rem; /* enlarged padding */
+  gap: 0.35rem;
+  padding: 0.36rem 0.78rem 0.42rem; /* enlarged padding */
   border-radius: 999px;
-  font-size: .85rem; /* was .7rem */
+  font-size: 0.85rem; /* was .7rem */
   letter-spacing: 1.2px; /* slightly more spacing for bigger text */
   line-height: 1;
   pointer-events: none;
@@ -691,55 +715,79 @@ h4 {
   /* glass / depth */
   backdrop-filter: blur(6px) saturate(160%);
   -webkit-backdrop-filter: blur(6px) saturate(160%);
-  box-shadow: 0 2px 4px -1px rgba(0,0,0,.15), 0 4px 12px -2px rgba(0,0,0,.12);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
   position: absolute;
   overflow: hidden;
 }
 .status-badge::before {
-  font-size: .85rem; /* sync with main font-size */
+  font-size: 0.85rem; /* sync with main font-size */
   font-weight: 600;
   transform: translateY(-2px); /* adjust vertical alignment after size increase */
 }
 /* Achieved (已完成) */
 .status-badge.done {
   color: #1f7a34;
-  background: linear-gradient(135deg,#e4f9ea,#d0f3dc 45%,#bfeccf);
-  border: 1px solid rgba(47,158,68,.45);
-  text-shadow: 0 1px 0 rgba(255,255,255,.65);
+  background: linear-gradient(135deg, #e4f9ea, #d0f3dc 45%, #bfeccf);
+  border: 1px solid rgba(47, 158, 68, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
 }
-.status-badge.done::before { content: '✔'; }
+.status-badge.done::before {
+  content: "✔";
+}
 /* Unachieved (未完成) now red */
 .status-badge.undone {
   color: #b61616;
-  background: linear-gradient(135deg,#ffe6e6,#ffd0d0 45%,#ffc1c1);
-  border: 1px solid rgba(224,49,49,.45);
-  text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  background: linear-gradient(135deg, #ffe6e6, #ffd0d0 45%, #ffc1c1);
+  border: 1px solid rgba(224, 49, 49, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-.status-badge.undone::before { content: '✧'; }
+.status-badge.undone::before {
+  content: "✧";
+}
 /* Subtle shine animation for achieved */
 .status-badge.done::after {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; left: -60%;
-  width: 160%; height: 100%;
-  background: linear-gradient(115deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 70%);
+  top: 0;
+  left: -60%;
+  width: 160%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0) 70%
+  );
   transform: translateX(0);
   animation: badge-shine 3.8s linear infinite;
   mix-blend-mode: screen;
   pointer-events: none;
 }
 @keyframes badge-shine {
-  0% { transform: translateX(0); opacity: .15; }
-  55% { opacity: .55; }
-  100% { transform: translateX(60%); opacity: 0; }
+  0% {
+    transform: translateX(0);
+    opacity: 0.15;
+  }
+  55% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(60%);
+    opacity: 0;
+  }
 }
 /* Focus on reduced motion users */
 @media (prefers-reduced-motion: reduce) {
-  .status-badge.done::after { animation: none; opacity: .25; }
+  .status-badge.done::after {
+    animation: none;
+    opacity: 0.25;
+  }
 }
 /* Hover reveal (desktop only) - slight lift */
 @media (hover: hover) and (pointer: fine) {
-  .achievements .grid article:hover .status-badge { box-shadow: 0 4px 10px -2px rgba(0,0,0,.22), 0 2px 4px -1px rgba(0,0,0,.18); }
+  .achievements .grid article:hover .status-badge {
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.22), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
+  }
 }
 
 /* Modal styles */
@@ -772,7 +820,7 @@ h4 {
   justify-content: space-between;
   align-items: center;
   padding: 1.2rem 1.6rem;
-  border-bottom: 1px solid rgba(93,130,255,0.12);
+  border-bottom: 1px solid rgba(93, 130, 255, 0.12);
 }
 
 .edit-modal header h3 {
@@ -788,10 +836,12 @@ h4 {
   line-height: 1;
   cursor: pointer;
   color: #5c6b93;
-  padding: .3rem .6rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 8px;
 }
-.close-btn:hover { background: rgba(93,130,255,0.1); }
+.close-btn:hover {
+  background: rgba(93, 130, 255, 0.1);
+}
 
 .modal-body {
   display: grid;
@@ -802,13 +852,17 @@ h4 {
 
 .block {
   background: rgba(246, 249, 255, 0.9);
-  border: 1px solid rgba(93,130,255,0.1);
+  border: 1px solid rgba(93, 130, 255, 0.1);
   border-radius: 22px;
   padding: 1.2rem 1.4rem 1.6rem;
   display: grid;
   gap: 1rem;
 }
-.block h4 { margin: 0 0 .4rem; font-size: 1.05rem; color: #2f3a60; }
+.block h4 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: #2f3a60;
+}
 
 .avatar-row {
   display: flex;
@@ -821,7 +875,7 @@ h4 {
   border-radius: 24px;
   object-fit: cover;
   border: 3px solid #fff;
-  box-shadow: 0 6px 18px rgba(93,120,190,0.2);
+  box-shadow: 0 6px 18px rgba(93, 120, 190, 0.2);
 }
 .upload-btn {
   position: relative;
@@ -831,40 +885,90 @@ h4 {
   justify-content: center;
   background: linear-gradient(135deg, #5d82ff, #8fa3ff);
   color: #fff;
-  font-size: .9rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: .7rem 1.1rem;
+  padding: 0.7rem 1.1rem;
   border-radius: 14px;
   cursor: pointer;
 }
-.upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
 
-.form-row { display: grid; gap: .45rem; }
-.form-row label { font-size: .8rem; letter-spacing: .5px; text-transform: uppercase; color: #5c6b93; font-weight: 600; }
-.form-row input, .form-row textarea {
+.form-row {
+  display: grid;
+  gap: 0.45rem;
+}
+.form-row label {
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #5c6b93;
+  font-weight: 600;
+}
+.form-row input,
+.form-row textarea {
   width: 100%;
-  border: 1px solid rgba(93,130,255,0.25);
-  background: rgba(255,255,255,0.8);
-  padding: .65rem .8rem;
+  border: 1px solid rgba(93, 130, 255, 0.25);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.65rem 0.8rem;
   border-radius: 14px;
-  font-size: .95rem;
+  font-size: 0.95rem;
   font-family: inherit;
   resize: none;
   outline: none;
-  transition: border .15s, box-shadow .15s;
+  transition: border 0.15s, box-shadow 0.15s;
 }
-.form-row input:focus, .form-row textarea:focus { border-color: #5d82ff; box-shadow: 0 0 0 3px rgba(93,130,255,0.15); }
-.form-row input:disabled { background: rgba(240,244,255,0.7); cursor: not-allowed; }
+.form-row input:focus,
+.form-row textarea:focus {
+  border-color: #5d82ff;
+  box-shadow: 0 0 0 3px rgba(93, 130, 255, 0.15);
+}
+.form-row input:disabled {
+  background: rgba(240, 244, 255, 0.7);
+  cursor: not-allowed;
+}
 
-.actions { display: flex; gap: .8rem; justify-content: flex-end; margin-top: .4rem; }
-.actions button { border: none; padding: .65rem 1.2rem; border-radius: 14px; cursor: pointer; font-weight: 600; font-size: .9rem; }
-.actions .primary { background: linear-gradient(135deg, #5d82ff,#8fa3ff); color: #fff; }
-.actions .primary:disabled { opacity: .6; cursor: not-allowed; }
-.actions .ghost { background: rgba(93,130,255,0.12); color: #2f3a60; }
-.actions .ghost:hover { background: rgba(93,130,255,0.18); }
+.actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+.actions button {
+  border: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.actions .primary {
+  background: linear-gradient(135deg, #5d82ff, #8fa3ff);
+  color: #fff;
+}
+.actions .primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.actions .ghost {
+  background: rgba(93, 130, 255, 0.12);
+  color: #2f3a60;
+}
+.actions .ghost:hover {
+  background: rgba(93, 130, 255, 0.18);
+}
 
-.code-row .code-input-group { display: flex; gap: .6rem; }
-.code-input-group input { flex: 1; }
+.code-row .code-input-group {
+  display: flex;
+  gap: 0.6rem;
+}
+.code-input-group input {
+  flex: 1;
+}
 /* 发送验证码按钮：浅蓝色圆角胶囊样式 */
 .code-row .code-input-group button.ghost.small {
   border-radius: 999px;
@@ -872,13 +976,13 @@ h4 {
   border: 1px solid #b5d7ff;
   color: #1b4d7d;
   font-weight: 600;
-  padding: .55rem 1.15rem;
+  padding: 0.55rem 1.15rem;
   line-height: 1;
-  transition: background .18s, transform .18s, box-shadow .18s;
+  transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 .code-row .code-input-group button.ghost.small:hover:not(:disabled) {
   background: #d8ecff;
-  box-shadow: 0 4px 10px -4px rgba(60,120,200,.35);
+  box-shadow: 0 4px 10px -4px rgba(60, 120, 200, 0.35);
   transform: translateY(-2px);
 }
 .code-row .code-input-group button.ghost.small:active:not(:disabled) {
@@ -895,10 +999,16 @@ h4 {
 }
 /* 移动端/无 hover 环境下避免悬浮位移闪烁 */
 @media (hover: none) {
-  .code-row .code-input-group button.ghost.small:hover:not(:disabled) { transform: none; box-shadow: none; }
+  .code-row .code-input-group button.ghost.small:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+  }
 }
 
-button.small { padding: .55rem .9rem; font-size: .75rem; }
+button.small {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.75rem;
+}
 
 @media (max-width: 960px) {
   .hero-card {
@@ -925,7 +1035,11 @@ button.small { padding: .55rem .9rem; font-size: .75rem; }
     justify-self: center;
   }
 
-  .edit-modal { width: 100%; }
-  .modal-body { padding: 1.1rem 1rem 1.6rem; }
+  .edit-modal {
+    width: 100%;
+  }
+  .modal-body {
+    padding: 1.1rem 1rem 1.6rem;
+  }
 }
 </style>
