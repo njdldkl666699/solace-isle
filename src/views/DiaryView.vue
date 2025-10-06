@@ -72,6 +72,9 @@ const moodForDate = (date: Date) => {
 
 // const smartTags = ref<string[]>([]);
 const tagInput = ref("");
+// 新增：生成标签加载状态
+const generatingTags = ref(false);
+
 // 新增：内部输入框 ref 与聚焦方法
 const tagInnerInput = ref<HTMLInputElement | null>(null);
 const focusTagInput = () => tagInnerInput.value?.focus();
@@ -101,6 +104,8 @@ const removeSmartTag = (tag: string) => {
 
 // 生成智能标签保持不变
 const getSmartTags = async () => {
+  if (generatingTags.value) return; // 避免重复点击
+  generatingTags.value = true;
   try {
     const response = await api.post("/diary/tags", { content: draft.content });
 
@@ -119,6 +124,8 @@ const getSmartTags = async () => {
     }
   } catch (err: any) {
     ElMessage.error("无法生成情绪标签");
+  } finally {
+    generatingTags.value = false;
   }
 };
 
@@ -453,7 +460,9 @@ const closeDayEntry = () => {
           <div class="tag-area">
             <div class="tag-header">
               <span class="label">情绪标签</span>
-              <button type="button" class="gen-btn" @click="getSmartTags">智能生成</button>
+              <button type="button" class="gen-btn" @click="getSmartTags" :disabled="generatingTags">
+                {{ generatingTags ? '正在生成…' : '智能生成' }}
+              </button>
             </div>
             <div class="tag-input-wrapper" @click="focusTagInput">
               <div
@@ -699,18 +708,28 @@ const closeDayEntry = () => {
   display: grid;
   gap: 0.35rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s ease, color 0.3s ease;
+  position: relative;
 }
-
-.emoji-row button.active,
+/* 分离 hover 与 active，hover 保持原轻微提升效果 */
 .emoji-row button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 32px rgba(93, 130, 255, 0.2);
+  box-shadow: 0 16px 32px rgba(93, 130, 255, 0.22);
 }
-
-.emoji-row span {
-  font-size: 1.6rem;
+/* 深蓝选中状态（调亮版本） */
+.emoji-row button.active {
+  background: linear-gradient(140deg,#4f8fff 0%,#74afff 55%,#9bc9ff 100%);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px rgba(110,160,255,0.42), 0 8px 20px -4px rgba(80,130,215,0.40), 0 3px 8px rgba(0,0,0,0.16);
 }
+/* 选中再悬浮时稍微加亮 */
+.emoji-row button.active:hover {
+  background: linear-gradient(140deg,#4687f5,#6ea9ff,#a8d7ff);
+  box-shadow: 0 0 0 2px rgba(120,170,255,0.5), 0 10px 24px -4px rgba(85,135,215,0.48), 0 4px 10px rgba(0,0,0,0.20);
+}
+/* 小标签字体在选中时也跟随变白提亮 */
+.emoji-row button.active small { color: rgba(255,255,255,0.96); }
 
 .tag-area {
   display: flex;
@@ -736,11 +755,17 @@ const closeDayEntry = () => {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 .gen-btn:hover {
   background: #fff;
   box-shadow: 0 4px 10px rgba(93, 130, 255, 0.18);
+}
+.gen-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .tag-input-wrapper {
