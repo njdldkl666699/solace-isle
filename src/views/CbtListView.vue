@@ -186,6 +186,11 @@ h4 {
   background: rgba(93, 130, 255, 0.16);
   font-size: 0.85rem;
   color: #41507a;
+  display: inline-flex; /* 使内容可居中 */
+  align-items: center;   /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  line-height: 1; /* 避免行高造成垂直偏移 */
+  text-align: center; /* 多行时居中 */
 }
 
 .cta {

@@ -526,6 +526,8 @@ const submitScenario = async () => {
   font-size: 1rem;
   line-height: 1.5;
 }
+/* 新增：为证据区标签文字与文本域增加间距 */
+.evidence label > textarea { margin-top: 0.6rem; display: block; }
 
 .long-text textarea:focus,
 .evidence textarea:focus {
