@@ -133,7 +133,12 @@ const loadOlderMessages = async () => {
   const firstId = session.value.messages[0]?.id;
   const prevH = messageContainer.value?.scrollHeight || 0;
   try {
-    const resp = await api.get(`/chat/sessions/${session.value.id}`, { params: { firstId, limit: messageLimit } });
+    const resp = await api.get(`/chat/sessions/${session.value.id}`, {
+      params: {
+        firstId,
+        limit: messageLimit
+      }
+    });
     if (resp.data?.code === 1) {
       const pairs: any[] = resp.data.data?.messages || [];
       if (pairs.length) {
@@ -149,8 +154,12 @@ const loadOlderMessages = async () => {
       }
       hasMoreMessages.value = !!resp.data.data?.hasMore;
     } else ElMessage.error("加载更早消息失败");
-  } catch { ElMessage.error("加载更早消息出错"); }
-  finally { isLoadingMessages.value = false; }
+  } catch {
+    ElMessage.error("加载更早消息出错");
+  }
+  finally {
+    isLoadingMessages.value = false;
+  }
 };
 const handleMessageScroll = () => {
   const el = messageContainer.value; if (!el || isLoadingMessages.value || !hasMoreMessages.value) return;
@@ -293,7 +302,7 @@ const streamChat = async (query: string) => {
             });
           }
         }
-        else if (ev === 'messageEnd') {
+        else if (ev === 'message_end') {
           await finalizePair();
         }
       }
