@@ -248,13 +248,13 @@ const submitScenario = async () => {
   isSubmitting.value = true;
   const payload = buildAnswerPayload();
   try {
-    const token = localStorage.getItem("token");
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/cbt/${scenario.value.id}`, {
+    const token = appStore.token;
+    const res = await fetch(`${api.defaults.baseURL || ''}/cbt/${scenario.value.id}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "text/event-stream",
-        ...(token ? { Authentication: `Bearer ${token}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(payload),
     });

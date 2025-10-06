@@ -232,12 +232,14 @@ const streamChat = async (query: string) => {
   currentMessageId.value = null;
   abortController = new AbortController();
   try {
+    const token = appStore.token;
     const url = `${api.defaults.baseURL || ''}/chat`.replace(/([^:])\/\//g,'$1/');
     const resp = await fetch(url, {
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'Accept':'text/event-stream'
+        'Accept':'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
         query: query,
