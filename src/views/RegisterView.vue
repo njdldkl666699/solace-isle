@@ -45,6 +45,7 @@ const checkEmail = () => {
 const sendEmail = async () => {
   if (countdown.value > 0) return;
   if (!checkEmail()) return;
+  startCountdown(60);
   try {
     const response = await api.get("/auth/sendCode",{
        params: {
@@ -54,7 +55,6 @@ const sendEmail = async () => {
 
     if(response.data.code === 1){
       ElMessage.success("验证码已发送");
-      startCountdown(60);
     }else {
       ElMessage.error(response.data.msg || "验证码发送失败，请稍后重试。");
     }
