@@ -338,7 +338,7 @@ onUnmounted(() => {
         <img :src="appStore.user.avatar" alt="用户头像" />
         <div>
           <h3>{{ appStore.user.nickname }}</h3>
-          <p class="id">学号（脱敏）：{{ appStore.user.studentId.slice(0, 4) }}****</p>
+          <p class="id">学号：{{ appStore.user.studentId }}</p>
           <p class="motto">“{{ appStore.user.motto }}”</p>
         </div>
         <div class="hero-actions">

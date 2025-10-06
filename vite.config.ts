@@ -9,7 +9,6 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     server: {
       port: Number(env.VITE_FRONTEND_PORT || 5173),
-      open: true,
       disableHostCheck: true,
       hot: true, //自动保存
       overlay: {
